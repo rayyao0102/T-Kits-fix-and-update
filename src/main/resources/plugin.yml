@@ -1,0 +1,97 @@
+name: T-Kits
+version: ${project.version}
+main: com.takeda.tkits.TKits
+api-version: '1.21'
+author: Takeda_Dev
+description: ${project.description}
+depend: [PlaceholderAPI]
+
+commands:
+  kit:
+    description: Opens the main Kit GUI.
+    usage: /<command> [import <code>]
+    aliases: [k]
+  k1:
+    description: Loads Kit 1.
+    usage: /<command>
+  k2:
+    description: Loads Kit 2.
+    usage: /<command>
+  k3:
+    description: Loads Kit 3.
+    usage: /<command>
+  k4:
+    description: Loads Kit 4.
+    usage: /<command>
+  k5:
+    description: Loads Kit 5.
+    usage: /<command>
+  k6:
+    description: Loads Kit 6.
+    usage: /<command>
+  k7:
+    description: Loads Kit 7.
+    usage: /<command>
+  regear:
+    description: Restocks your inventory via a special shulker box.
+    usage: /<command>
+    aliases: [rg]
+  arrange:
+    description: Arranges your inventory based on the last used kit layout.
+    usage: /<command>
+    aliases: [ag]
+  tkitsadmin:
+    description: T-Kits administrative commands.
+    usage: /<command> <subcommand> [args]
+    aliases: [tka]
+    permission: tkits.admin
+
+permissions:
+  tkits.admin:
+    description: Grants access to all T-Kits administrative commands.
+    default: op
+  tkits.use:
+    description: Allows players to use the main /kit command and GUI.
+    default: true
+  tkits.load.1:
+    description: Allows players to load Kit 1 via command.
+    default: true
+  tkits.load.2:
+    description: Allows players to load Kit 2 via command.
+    default: true
+  tkits.load.3:
+    description: Allows players to load Kit 3 via command.
+    default: true
+  tkits.load.4:
+    description: Allows players to load Kit 4 via command.
+    default: true
+  tkits.load.5:
+    description: Allows players to load Kit 5 via command.
+    default: true
+  tkits.load.6:
+    description: Allows players to load Kit 6 via command.
+    default: true
+  tkits.load.7:
+    description: Allows players to load Kit 7 via command.
+    default: true
+  tkits.regear:
+    description: Allows players to use the /regear command.
+    default: true
+  tkits.arrange:
+    description: Allows players to use the /arrange command.
+    default: true
+  tkits.kitroom.use:
+    description: Allows players to use the Kitroom and take items.
+    default: true
+  tkits.kitroom.admin:
+    description: Allows admins to modify and save the Kitroom layout.
+    default: op
+  tkits.kit.global:
+    description: Allows players to set their kits to global.
+    default: true
+  tkits.kit.share:
+    description: Allows players to share their kits and use /kit import.
+    default: true
+  tkits.cooldown.bypass:
+    description: Bypass command cooldowns for /k1-7, /rg, /ag.
+    default: op

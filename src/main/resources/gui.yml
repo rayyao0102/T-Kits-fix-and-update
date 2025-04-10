@@ -1,0 +1,357 @@
+# T-Kits GUI Configuration
+# ==============================================
+# This file defines GUI elements used throughout the plugin
+# All placeholders like {kit_number}, {owner}, {category}, etc. are preserved
+
+#-----------------------------------------
+# GUI Titles
+#-----------------------------------------
+titles:
+  main_menu: "&8[&2T-&aKits&8] &fMain Menu"
+  kit_editor: "&8[&2T-&aKits&8] &fKit Editor - Kit {kit_number}"
+  enderchest_editor: "&8[&5T-&dKits&8] &fEchest Editor - Kit {kit_number}"
+  confirmation: "&8[&4!&8] &cConfirmation"
+  global_kits: "&8[&d✦&8] &fGlobal Kits &8(Page {page}/{total_pages})"
+  kit_preview: "&8[&9✦&8] &fPreview - Kit {kit_number} ({owner})"
+  echest_preview: "&8[&5✦&8] &fEchest Preview - Kit {kit_number} ({owner})"
+  regear_box: "&8[&a✦&8] &fRegear - Kit {kit_number}"
+  kitroom_main: "&8[&b✦&8] &fKitroom - Categories"
+  kitroom_category: "&8[&b✦&8] &fKitroom - {category}"
+
+#-----------------------------------------
+# GUI Items for all menus
+#-----------------------------------------
+items:
+  #-----------------------------------------
+  # Main Menu Items
+  #-----------------------------------------
+  main_menu:
+    # Background filler
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&r"
+      # No slot needed, used for filling empty slots
+    
+    # Kit buttons
+    kit_button_available:
+      material: LIME_SHULKER_BOX
+      name: "&2Kit &a{kit_number}"
+      lore:
+        - "&b✦ Global" # Placeholder for global status
+        - "&7✦ Private" # Placeholder for private status
+        - "&e➤ &fClick to Edit"
+        - "&8➤ Shift+Click to Load"
+      # Slots 10-16 are handled dynamically
+    
+    kit_button_empty:
+      material: GREEN_SHULKER_BOX
+      name: "&7Kit {kit_number}"
+      lore:
+        - "&e➤ &fClick to Create"
+        - "&8➤ Shift+Click to Load"
+      # Slots 10-16 are handled dynamically
+    
+    # Navigation buttons
+    kitroom_button:
+      material: ENDER_CHEST
+      name: "&b✦ Kitroom"
+      lore:
+        - "&7Access the server's item repository."
+      slot: 38
+    
+    info_button:
+      material: BOOK
+      name: "&e✦ Information"
+      lore:
+        - "&7Plugin Version: &f{version}"
+        - "&7Author: &fTakeda_Dev"
+      slot: 40
+    
+    global_kits_button:
+      material: BEACON
+      name: "&d✦ Global Kits"
+      lore:
+        - "&7Browse kits shared publicly"
+        - "&7by other players."
+      slot: 42
+
+  #-----------------------------------------
+  # Kit Editor Items
+  #-----------------------------------------
+  kit_editor:
+    # Background fillers
+    item_area_filler:
+      material: LIGHT_GRAY_STAINED_GLASS_PANE
+      name: "&r"
+    
+    button_area_filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&r"
+    
+    # Navigation buttons
+    back_button:
+      material: BARRIER
+      name: "&c◀ Back"
+      lore:
+        - "&7Return to the main menu."
+        - "&8(Saves kit if auto-save is enabled)"
+      slot: 41
+    
+    # Primary action buttons
+    load_inventory_button:
+      material: HOPPER_MINECART
+      name: "&b⬆ Load Current Inventory"
+      lore:
+        - "&7Copies your current inventory,"
+        - "&7armor, and offhand into the editor."
+      slot: 42
+    
+    save_kit_button:
+      material: NETHERITE_INGOT
+      name: "&a✓ Save Kit"
+      lore:
+        - "&7Saves the current layout"
+        - "&7as Kit {kit_number}."
+      slot: 43
+    
+    edit_echest_button:
+      material: ENDER_CHEST
+      name: "&5✦ Edit Ender Chest"
+      lore:
+        - "&7Opens the editor for this kit's"
+        - "&7linked Ender Chest contents."
+      slot: 44
+    
+    # Secondary action buttons
+    clear_kit_button:
+      material: BARRIER
+      name: "&c✗ Clear Kit"
+      lore:
+        - "&4⚠ Warning: &cDeletes this kit permanently!"
+        - "&7Requires confirmation click."
+      slot: 47
+    
+    repair_items_button:
+      material: DIAMOND_PICKAXE
+      name: "&6⚒ Repair Items"
+      lore:
+        - "&7Repairs all damageable items"
+        - "&7in this kit's layout."
+      slot: 48
+    
+    share_kit_button:
+      material: WRITTEN_BOOK
+      name: "&e✉ Share Kit"
+      lore:
+        - "&7Generates a temporary code"
+        - "&7to share this kit with others."
+      slot: 49
+    
+    import_kit_button:
+      material: ENDER_EYE
+      name: "&d⬇ Import Kit"
+      lore:
+        - "&7Import a kit using a share code."
+        - "&c⚠ Overwrites this kit slot!"
+      slot: 50
+    
+    # Status toggle buttons
+    set_global_button:
+      material: BARRIER
+      name: "&a⊕ Set Global"
+      lore:
+        - "&7Makes this kit public,"
+        - "&7allowing others to browse it."
+      slot: 51
+    
+    set_private_button:
+      material: BEACON
+      name: "&b⊖ Set Private"
+      lore:
+        - "&7Makes this kit private,"
+        - "&7only you can load it."
+      slot: 51
+
+  #-----------------------------------------
+  # Ender Chest Editor Items
+  #-----------------------------------------
+  echest_editor:
+    filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&r"
+    
+    back_button:
+      material: BARRIER
+      name: "&c◀ Back"
+      lore:
+        - "&7Return to the main kit editor."
+      slot: 27
+    
+    save_button:
+      material: WRITABLE_BOOK
+      name: "&a✓ Save Ender Chest"
+      lore:
+        - "&7Saves this Ender Chest layout."
+      slot: 31
+
+  #-----------------------------------------
+  # Confirmation GUI Items
+  #-----------------------------------------
+  confirmation:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+      name: "&r"
+    
+    confirm_button:
+      material: LIME_TERRACOTTA
+      name: "&a✓ Confirm"
+      # Lore is dynamic
+      slot: 11
+    
+    cancel_button:
+      material: RED_TERRACOTTA
+      name: "&c✗ Cancel"
+      # Lore is dynamic
+      slot: 15
+
+  #-----------------------------------------
+  # Global Kits List Items
+  #-----------------------------------------
+  global_kits_list:
+    item_area_filler:
+      material: LIGHT_GRAY_STAINED_GLASS_PANE
+      name: "&r"
+    
+    button_area_filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&r"
+    
+    back_button:
+      material: BARRIER
+      name: "&c◀ Back"
+      lore:
+        - "&7Return to the main menu."
+      slot: 45
+    
+    previous_page_button:
+      material: ARROW
+      name: "&e◀ Previous Page"
+      lore:
+        - "&7Go to page {page}"
+      slot: 48
+    
+    page_info_item:
+      material: PAPER
+      name: "&fPage &e{page}&f/&e{total_pages}"
+      slot: 49
+    
+    next_page_button:
+      material: ARROW
+      name: "&e▶ Next Page"
+      lore:
+        - "&7Go to page {page}"
+      slot: 50
+
+  #-----------------------------------------
+  # Kit Preview Items
+  #-----------------------------------------
+  kit_preview:
+    filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&r"
+    
+    back_button:
+      material: BARRIER
+      name: "&c◀ Back"
+      lore:
+        - "&7Return to Global Kits list."
+      slot: 49
+    
+    view_echest_button:
+      material: ENDER_CHEST
+      name: "&5✦ View Ender Chest"
+      lore:
+        - "&7View the linked Ender Chest contents."
+      slot: 51
+
+  #-----------------------------------------
+  # Ender Chest Preview Items
+  #-----------------------------------------
+  echest_preview:
+    filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: "&r"
+    
+    back_button:
+      material: BARRIER
+      name: "&c◀ Back"
+      lore:
+        - "&7Return to Kit Preview."
+      slot: 31
+
+  #-----------------------------------------
+  # Kitroom Main Menu Items
+  #-----------------------------------------
+  kitroom_main:
+  category_overrides:
+    armor:
+      slot: 10
+      material: DIAMOND_CHESTPLATE
+      name: "&9🛡️ Armor"
+      lore:
+        - "&7All armor pieces"
+    sword:
+      slot: 11
+      material: DIAMOND_SWORD
+      name: "&c⚔ Sword"
+      lore:
+        - "&7All swords"
+    utilities:
+      slot: 12
+      material: ENDER_PEARL
+      name: "&bUtilities"
+      lore:
+        - "&7Useful items"
+    potions:
+      slot: 13
+      material: POTION
+      name: "&dPotions"
+      lore:
+        - "&7All potion types"
+    arrows:
+      slot: 14
+      material: ARROW
+      name: "&fArrows"
+      lore:
+        - "&7All arrow types"
+    others:
+      slot: 15
+      material: CHEST
+      name: "&7Others"
+      lore:
+        - "&7Miscellaneous"
+
+  #-----------------------------------------
+  # Kitroom Category View Items
+  #-----------------------------------------
+  kitroom_category:
+    filler:
+      material: LIGHT_GRAY_STAINED_GLASS_PANE
+      name: "&r"
+    item_area_filler:
+      material: BLACK_STAINED_GLASS_PANE
+      name: " "
+    back_button:
+      material: BARRIER
+      name: "&c⬅ Bᴀᴄᴋ"
+      lore:
+        - "&7Return to Category Selection."
+      slot: 45
+    save_button:
+      material: NETHERITE_INGOT
+      name: "&a💾 Sᴀᴠᴇ Kɪᴛʀᴏᴏᴍ"
+      lore:
+        - "&7Saves the current layout"
+        - "&7of this category."
+        - "&cRequires permission."
+      slot: 53

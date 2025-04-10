@@ -1,0 +1,7 @@
+/.classpath
+/.factorypath
+/.project
+/.vscode
+/dependency-reduced-pom.xml
+/src_before_logging.tar.gz
+/target

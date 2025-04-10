@@ -1,0 +1,12 @@
+# T-Kits Kitroom Configuration
+# Items are organized by category. Admins can edit this in-game via the GUI.
+# Use '/tka kitroom save' to save changes made via the GUI back to this file.
+# Use '/tka kitroom reload' to load changes made directly to this file.
+
+categories:
+  armor: {}
+  sword: {}
+  utilities: {}
+  potions: {}
+  arrows: {}
+  others: {}
