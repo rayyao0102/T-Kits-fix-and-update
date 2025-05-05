@@ -10,19 +10,19 @@
     <packaging>jar</packaging>
 
     <name>T-Kits</name>
-    <description>Advanced Kit PvP Plugin</description>
+    <description>Kits made easier!!</description>
 
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spigot.version>1.21-R0.1-SNAPSHOT</spigot.version>
-        <acf.version>0.5.1-SNAPSHOT</acf.version> <!-- Updated ACF Version -->
+        <acf.version>0.5.1-SNAPSHOT</acf.version>
         <lombok.version>1.18.30</lombok.version>
         <placeholderapi.version>2.11.5</placeholderapi.version>
         <anvilgui.version>1.10.4-SNAPSHOT</anvilgui.version>
         <hikaricp.version>6.3.0</hikaricp.version>
         <mysql.connector.version>8.0.33</mysql.connector.version>
-        <commons.lang.version>3.14.0</commons.lang.version> <!-- Updated Commons Lang -->
+        <commons.lang.version>3.14.0</commons.lang.version>
     </properties>
 
     <repositories>

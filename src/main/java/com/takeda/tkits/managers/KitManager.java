@@ -5,6 +5,8 @@ import com.takeda.tkits.models.Kit;
 import com.takeda.tkits.models.KitContents;
 import com.takeda.tkits.models.PlayerData;
 import com.takeda.tkits.services.CooldownService; // Import CooldownService
+import com.takeda.tkits.services.UtilityService; // Import UtilityService for applyKitToPlayer internal call
+
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -22,12 +24,14 @@ import java.util.stream.Collectors;
 public class KitManager {
 
     private final TKits plugin;
-    private final CooldownService cooldownService; // Added CooldownService
+    private final CooldownService cooldownService;
+    private final UtilityService utilityService;
     private final Map<UUID, Map<Integer, Kit>> globalKitsCache;
 
     public KitManager(TKits plugin) {
         this.plugin = plugin;
-        this.cooldownService = plugin.getCooldownService(); // Get instance
+        this.cooldownService = plugin.getCooldownService();
+        this.utilityService = plugin.getUtilityService();
         this.globalKitsCache = new ConcurrentHashMap<>();
     }
 
@@ -68,13 +72,15 @@ public class KitManager {
     public List<Kit> getAllGlobalKits() {
         return globalKitsCache.values().stream()
                 .flatMap(ownerMap -> ownerMap.values().stream())
-                 .sorted(Comparator.comparing(Kit::getOwner).thenComparing(Kit::getKitNumber)) // Sort for consistent display
+                 .sorted(Comparator.comparing(Kit::getOwner).thenComparing(Kit::getKitNumber))
                 .collect(Collectors.toList());
     }
 
     public Kit getGlobalKit(UUID owner, int kitNumber) {
          return globalKitsCache.getOrDefault(owner, Collections.emptyMap()).get(kitNumber);
     }
+    
+
 
 
     // --- Kit Saving/Editing ---
@@ -82,76 +88,36 @@ public class KitManager {
     public void saveKit(Player player, int kitNumber, Inventory editorInventory) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
         if (playerData == null) {
-             plugin.getMessageUtil().sendMessage(player, "error"); // Should not happen if player online
+             plugin.getMessageUtil().sendMessage(player, "error"); return;
+        }
+
+        Kit kitFromEditor = plugin.getGuiManager().createKitFromEditor(player, kitNumber, editorInventory);
+        if (kitFromEditor == null) {
+             plugin.getMessageUtil().debug("saveKit: Aborted because createKitFromEditor returned null (validation failed).");
              return;
         }
 
-        // --- Config Checks for Saving ---
-        Set<Material> forbiddenMaterials = plugin.getConfigManager().getPreventSaveMaterials();
-        int maxItems = plugin.getConfigManager().getMaxTotalItemsInKit();
-        int currentItemCount = 0;
-
-        KitContents contents = new KitContents();
-        ItemStack[] editorContents = editorInventory.getContents();
-        Map<Integer, ItemStack> kitItems = new HashMap<>();
-
-        for (int editorSlot = 0; editorSlot <= 40; editorSlot++) { // Check slots 0-40 (inclusive)
-            int playerInvSlot = mapEditorSlotToPlayerInvSlot(editorSlot);
-            ItemStack item = editorContents[editorSlot];
-            if (playerInvSlot != -1 && item != null && item.getType() != Material.AIR) {
-                 // Check forbidden materials
-                 if (!forbiddenMaterials.isEmpty() && forbiddenMaterials.contains(item.getType())) {
-                     plugin.getMessageUtil().sendMessage(player, "cannot_save_forbidden_item", "item", item.getType().toString()); // Add this message to config.yml
-                     plugin.getMessageUtil().playSound(player, "error");
-                     return;
+        playerData.setKit(kitNumber, kitFromEditor);
+        plugin.getPlayerDataManager().savePlayerKit(player.getUniqueId(), kitFromEditor)
+             .thenRunAsync(() -> {
+                 // Update global cache ONLY IF the saved kit is marked global
+                 if (kitFromEditor.isGlobal()) {
+                      addGlobalKitToCache(kitFromEditor); // Ensure cache reflects saved state if global
+                 } else {
+                      // If it WAS global but is now private, remove from cache
+                      // This relies on setKitGlobalStatus handling cache removal for privacy changes.
+                      // But, saving a previously global kit as private should also update cache here.
+                      removeGlobalKitFromCache(kitFromEditor.getOwner(), kitFromEditor.getKitNumber());
                  }
-                 kitItems.put(playerInvSlot, item.clone());
-                 currentItemCount++; // Count non-air items
-            }
-        }
-
-        // Check max items (only count main inventory/armor/offhand from editor)
-        if (maxItems > 0 && currentItemCount > maxItems) {
-             plugin.getMessageUtil().sendMessage(player, "kit_exceeds_max_items", "count", String.valueOf(currentItemCount), "max", String.valueOf(maxItems)); // Add this message to config.yml
-             plugin.getMessageUtil().playSound(player, "error");
-            return;
-        }
-        // --- End Config Checks ---
-
-        contents.setItems(kitItems);
-
-        Kit existingKit = playerData.getKit(kitNumber);
-        Kit newKit;
-
-        KitContents existingEchest = (existingKit != null) ? existingKit.getEnderChestContents() : new KitContents(); // Preserve existing or create empty
-
-        if (existingKit != null) {
-            newKit = existingKit.toBuilder()
-                    .contents(contents)
-                    .enderChestContents(existingEchest) // Preserve EChest contents during main kit save
-                    .build();
-        } else {
-             newKit = Kit.builder()
-                     .kitNumber(kitNumber)
-                     .owner(player.getUniqueId())
-                     .name("Kit " + kitNumber)
-                     .contents(contents)
-                     .enderChestContents(existingEchest) // Start with empty/preserved echest
-                     .global(false) // Default to private
-                     .build();
-        }
-
-        // Update cache and save (savePlayerKit is async and handles exceptions)
-        playerData.setKit(kitNumber, newKit);
-        plugin.getPlayerDataManager().savePlayerKit(player.getUniqueId(), newKit);
-
-         // Update global cache if status changed implicitly? No, requires explicit toggle.
-        if (newKit.isGlobal()) {
-             addGlobalKitToCache(newKit); // Ensure cache is up-to-date if saving an already global kit
-        }
-
-        plugin.getMessageUtil().sendActionBar(player, "kit_saved", "kit_number", String.valueOf(kitNumber)); // Use action bar
-        plugin.getMessageUtil().playSound(player, "kit_save");
+                 plugin.getMessageUtil().sendActionBar(player, "kit_saved", "kit_number", String.valueOf(kitNumber));
+                 plugin.getMessageUtil().playSound(player, "kit_save");
+             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
+             .exceptionally(ex -> {
+                  plugin.getMessageUtil().logException("Failed to save kit " + kitNumber + " for player " + player.getUniqueId(), ex);
+                  // Revert memory? Risky, could overwrite newer data. Log and inform player.
+                  plugin.getMessageUtil().sendMessage(player, "error");
+                  return null;
+              });
     }
 
      public void saveEnderChestKit(Player player, int kitNumber, Inventory echestEditorInventory) {
@@ -165,37 +131,38 @@ public class KitManager {
               return;
           }
 
-         // --- Config Checks for Saving EChest ---
          Set<Material> forbiddenMaterials = plugin.getConfigManager().getPreventSaveMaterials();
-
          KitContents echestContents = new KitContents();
          Map<Integer, ItemStack> echestItems = new HashMap<>();
-         for (int slot = 0; slot < 27; slot++) { // Standard EChest size
+         for (int slot = 0; slot < 27; slot++) {
              ItemStack item = echestEditorInventory.getItem(slot);
              if (item != null && item.getType() != Material.AIR) {
-                 // Check forbidden materials
                  if (!forbiddenMaterials.isEmpty() && forbiddenMaterials.contains(item.getType())) {
-                     plugin.getMessageUtil().sendMessage(player, "cannot_save_forbidden_item_echest", "item", item.getType().toString()); // Add this message to config.yml
+                     plugin.getMessageUtil().sendMessage(player, "cannot_save_forbidden_item_echest", "item", item.getType().toString());
                      plugin.getMessageUtil().playSound(player, "error");
                      return;
                  }
                  echestItems.put(slot, item.clone());
              }
          }
-         // --- End Config Checks ---
-
          echestContents.setItems(echestItems);
 
-         // Update only the enderchest part of the kit
          Kit updatedKit = kit.toBuilder()
                  .enderChestContents(echestContents)
                  .build();
 
          playerData.setKit(kitNumber, updatedKit);
-         plugin.getPlayerDataManager().savePlayerKit(player.getUniqueId(), updatedKit);
-
-          plugin.getMessageUtil().sendActionBar(player, "kit_enderchest_saved", "kit_number", String.valueOf(kitNumber)); // Use action bar
-         plugin.getMessageUtil().playSound(player, "kit_save");
+         plugin.getPlayerDataManager().savePlayerKit(player.getUniqueId(), updatedKit)
+             .thenRunAsync(() -> {
+                 plugin.getMessageUtil().sendActionBar(player, "kit_enderchest_saved", "kit_number", String.valueOf(kitNumber));
+                 plugin.getMessageUtil().playSound(player, "kit_save");
+             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
+             .exceptionally(ex -> {
+                 plugin.getMessageUtil().logException("Failed to save EChest for kit " + kitNumber + " player " + player.getUniqueId(), ex);
+                 playerData.setKit(kitNumber, kit); // Revert memory
+                 plugin.getMessageUtil().sendMessage(player, "error");
+                 return null;
+              });
      }
 
     public void clearKit(Player player, int kitNumber) {
@@ -205,29 +172,27 @@ public class KitManager {
             return;
         }
 
-        Kit kit = playerData.getKit(kitNumber); // Get reference before removing
+        Kit kit = playerData.getKit(kitNumber);
         boolean wasGlobal = kit != null && kit.isGlobal();
 
-        playerData.removeKit(kitNumber); // Remove from memory cache
+        playerData.removeKit(kitNumber);
 
         plugin.getStorageHandler().deletePlayerKit(player.getUniqueId(), kitNumber)
             .thenComposeAsync(v -> {
-                 // Also update global status if it was global
                  if (wasGlobal) {
-                     removeGlobalKitFromCache(player.getUniqueId(), kitNumber); // Remove from cache
-                     return plugin.getStorageHandler().deleteGlobalKit(player.getUniqueId(), kitNumber); // Update storage (marks is_global=false)
+                     removeGlobalKitFromCache(player.getUniqueId(), kitNumber);
+                     return plugin.getStorageHandler().deleteGlobalKit(player.getUniqueId(), kitNumber);
                  }
                  return CompletableFuture.completedFuture(null);
-            }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin)) // Run cache updates on main thread
+            }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
             .thenRunAsync(() -> {
-                plugin.getMessageUtil().sendActionBar(player, "kit_cleared", "kit_number", String.valueOf(kitNumber)); // Use action bar
+                plugin.getMessageUtil().sendActionBar(player, "kit_cleared", "kit_number", String.valueOf(kitNumber));
                 plugin.getMessageUtil().playSound(player, "confirmation_confirm");
-             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin)) // Messages on main thread
+             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
              .exceptionally(ex -> {
                 plugin.getMessageUtil().logException("Failed to fully clear/delete kit " + kitNumber + " for " + player.getUniqueId(), ex);
                  plugin.getMessageUtil().sendMessage(player, "error");
-                 // Attempt to revert memory state? Might be complex/risky. Logging is important.
-                 if (kit != null) playerData.setKit(kitNumber, kit); // Attempt revert
+                 if (kit != null) playerData.setKit(kitNumber, kit);
                  if (wasGlobal && kit != null) addGlobalKitToCache(kit);
                 return null;
              });
@@ -242,11 +207,29 @@ public class KitManager {
               plugin.getMessageUtil().sendMessage(player, "data_loading_please_wait");
              return false;
          }
+         Kit kit = playerData.getKit(kitNumber);
+         if (kit == null) {
+             plugin.getMessageUtil().sendMessage(player, "kit_not_found", "kit_number", String.valueOf(kitNumber));
+             plugin.getMessageUtil().playSound(player, "error");
+             return false;
+         }
+         return loadKit(player, kit);
+    }
 
-        // --- Config Checks for Loading ---
+     public boolean loadKit(Player player, Kit kit) {
+         if (kit == null) {
+              plugin.getMessageUtil().sendMessage(player, "error");
+             return false;
+         }
+         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
+         if (playerData == null) {
+              plugin.getMessageUtil().sendMessage(player, "data_loading_please_wait");
+             return false;
+         }
+
         List<String> forbiddenWorlds = plugin.getConfigManager().getPreventLoadWorlds();
         if (!forbiddenWorlds.isEmpty() && forbiddenWorlds.contains(player.getWorld().getName())) {
-            plugin.getMessageUtil().sendMessage(player, "cannot_load_kit_in_world", "world", player.getWorld().getName()); // Add this message
+            plugin.getMessageUtil().sendMessage(player, "cannot_load_kit_in_world", "world", player.getWorld().getName());
             plugin.getMessageUtil().playSound(player, "error");
             return false;
         }
@@ -254,21 +237,17 @@ public class KitManager {
         if (plugin.getConfigManager().isLoadRequiresEmptyInventory()) {
              PlayerInventory inv = player.getInventory();
              boolean isEmpty = true;
-             // Check main slots, armor, and offhand
-             for (ItemStack item : inv.getStorageContents()) { if (item != null && item.getType() != Material.AIR) isEmpty = false; break; }
-             if (isEmpty) { for (ItemStack item : inv.getArmorContents()) { if (item != null && item.getType() != Material.AIR) isEmpty = false; break; } }
-             if (isEmpty) { if (inv.getItemInOffHand().getType() != Material.AIR) isEmpty = false; }
+             for (ItemStack item : inv.getStorageContents()) { if (item != null && item.getType() != Material.AIR) {isEmpty = false; break;} }
+             if (isEmpty) { for (ItemStack item : inv.getArmorContents()) { if (item != null && item.getType() != Material.AIR) {isEmpty = false; break;} } }
+             if (isEmpty) { if (inv.getItemInOffHand() != null && inv.getItemInOffHand().getType() != Material.AIR) isEmpty = false; }
 
              if (!isEmpty) {
-                 plugin.getMessageUtil().sendMessage(player, "must_have_empty_inventory_to_load"); // Add this message
+                 plugin.getMessageUtil().sendMessage(player, "must_have_empty_inventory_to_load");
                  plugin.getMessageUtil().playSound(player, "error");
                  return false;
              }
         }
-        // --- End Config Checks ---
 
-
-        // --- Cooldown Check ---
          if (!player.hasPermission("tkits.cooldown.bypass")) {
             long remaining = cooldownService.getRemainingCooldown(player.getUniqueId(), CooldownService.CooldownType.KIT_LOAD);
              if (remaining > 0) {
@@ -277,9 +256,7 @@ public class KitManager {
                  return false;
              }
          }
-         // --- End Cooldown Check ---
 
-         // --- Combat Tag Check ---
          if (plugin.getCombatTagManager().isTagged(player) && !player.hasPermission("tkits.combattag.bypass")) {
              long remainingMillis = plugin.getCombatTagManager().getRemainingTagTimeMillis(player);
              double remainingSeconds = Math.ceil(remainingMillis / 1000.0);
@@ -287,29 +264,23 @@ public class KitManager {
              plugin.getMessageUtil().playSound(player, "error");
              return false;
          }
-         // --- End Combat Tag Check ---
-
-         Kit kit = playerData.getKit(kitNumber);
-         if (kit == null) {
-             plugin.getMessageUtil().sendMessage(player, "kit_not_found", "kit_number", String.valueOf(kitNumber));
-             plugin.getMessageUtil().playSound(player, "error");
-             return false;
-         }
 
          if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) {
-             plugin.getMessageUtil().sendMessage(player, "cannot_load_in_gamemode"); // Add message
+             plugin.getMessageUtil().sendMessage(player, "cannot_load_in_gamemode");
              return false;
          }
 
         applyKitToPlayer(player, kit);
-        playerData.setLastLoadedKitNumber(kitNumber); // Track last loaded
 
-         // Apply Cooldown
+        if (kit.getOwner().equals(player.getUniqueId())) {
+            playerData.setLastLoadedKitNumber(kit.getKitNumber());
+        }
+
          if (!player.hasPermission("tkits.cooldown.bypass")) {
              cooldownService.applyCooldown(player.getUniqueId(), CooldownService.CooldownType.KIT_LOAD);
          }
 
-        plugin.getMessageUtil().sendActionBar(player, "kit_loaded", "kit_number", String.valueOf(kitNumber)); // Use action bar
+        plugin.getMessageUtil().sendActionBar(player, "kit_loaded", "kit_number", String.valueOf(kit.getKitNumber()));
         plugin.getMessageUtil().playSound(player, "kit_load");
         return true;
     }
@@ -317,45 +288,94 @@ public class KitManager {
     private void applyKitToPlayer(Player player, Kit kit) {
         PlayerInventory inv = player.getInventory();
         Inventory enderChest = player.getEnderChest();
+        boolean clearInv = plugin.getConfigManager().isClearInventoryOnLoad(); // Check config setting
 
-        // --- Config Check: Clear Inventory ---
-        if (plugin.getConfigManager().isClearInventoryOnLoad()) {
-             plugin.getMessageUtil().debug("Clearing inventory for " + player.getName() + " based on config.");
-            inv.clear();
-            inv.setArmorContents(new ItemStack[4]);
-            enderChest.clear();
+        plugin.getMessageUtil().debug("applyKitToPlayer: Applying kit " + kit.getKitNumber() + " to " + player.getName() + ". Clear inventory: " + clearInv); // DEBUG
+
+        // --- Clear Inventory / Stats (if configured) ---
+        if (clearInv) {
+            plugin.getMessageUtil().debug(" -> Clearing inventory and stats for " + player.getName() + " based on config."); // DEBUG
+            inv.clear(); // Clear main inventory (0-35)
+            inv.setArmorContents(new ItemStack[4]); // Clear armor slots (36-39)
+            inv.setItemInOffHand(null); // Clear offhand slot (40)
+            enderChest.clear(); // Clear Ender Chest
+
+            // Clear potion effects
             player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
-            // Reset more stats for a clean kit application
-             player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-             player.setFoodLevel(20);
-             player.setSaturation(5.0f); // Base saturation
-             player.setExp(0);
-             player.setLevel(0);
+
+            // Reset health, food, saturation, xp, level, fire
+            try {
+                // Set health to max health attribute
+                player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+            } catch (Exception e) {
+                plugin.getMessageUtil().debug(" -> Error getting max health attribute, defaulting to 20.0"); // DEBUG
+                player.setHealth(20.0); // Fallback if attribute fails
+            }
+            player.setFoodLevel(20);
+            player.setSaturation(5.0f); // Default saturation level
+            player.setExp(0);
+            player.setLevel(0);
             player.setFireTicks(0);
         } else {
-             plugin.getMessageUtil().debug("NOT clearing inventory for " + player.getName() + " based on config (clear_inventory_on_load=false). Items may be overwritten.");
-        }
-        // --- End Config Check ---
-
-        KitContents contents = kit.getContents();
-        if (contents != null && contents.getItems() != null) {
-            contents.getItems().forEach((slot, item) -> {
-                 if (item != null) {
-                     setItemSafe(inv, slot, item.clone());
-                 }
-            });
+            plugin.getMessageUtil().debug(" -> NOT clearing inventory for " + player.getName() + " (clear_inventory_on_load=false). Existing items might be overwritten or remain."); // DEBUG
         }
 
-        KitContents echestContents = kit.getEnderChestContents();
-        if (echestContents != null && echestContents.getItems() != null) {
-             echestContents.getItems().forEach((slot, item) -> {
-                 if (item != null && slot >= 0 && slot < enderChest.getSize()) {
-                     enderChest.setItem(slot, item.clone());
-                 }
-             });
+        // --- Apply Main Contents ---
+        // Get kit items, default to empty map if null
+        Map<Integer, ItemStack> kitItems = (kit.getContents() != null && kit.getContents().getItems() != null)
+                ? kit.getContents().getItems()
+                : Collections.emptyMap();
+
+        // Iterate ALL relevant player slots (0-40) to ensure consistency
+        for (int slot = 0; slot <= 40; slot++) {
+            ItemStack itemFromKit = kitItems.get(slot); // Get the item defined for this slot in the kit
+
+            // Check if the kit defines an item for this slot (and it's not AIR)
+            if (itemFromKit != null && itemFromKit.getType() != Material.AIR) {
+                // Set the item from the kit (using a clone) into the correct player slot
+                setItemSafe(inv, slot, itemFromKit.clone());
+
+                // Detailed Debug Logging for SET items
+                String metaStr = itemFromKit.hasItemMeta() ? itemFromKit.getItemMeta().toString() : "null";
+                metaStr = metaStr.substring(0, Math.min(metaStr.length(), 100)); // Limit meta string length for logs
+                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: Slot %d SET to KitItem: %s Amount: %d Meta: %s...",
+                                                             slot, itemFromKit.getType(), itemFromKit.getAmount(), metaStr)); // DEBUG
+            } else {
+                // If the kit does *not* define an item for this slot (or it's AIR),
+                // clear the corresponding slot in the player's inventory.
+                // This is crucial to remove leftover items if clearInv=false or if the kit is sparse.
+                clearItemSafe(inv, slot);
+                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: Slot %d CLEARED (kit definition null/AIR)", slot)); // DEBUG
+            }
         }
 
+        // --- Apply Ender Chest Contents ---
+        // Get Ender Chest items, default to empty map if null
+        Map<Integer, ItemStack> echestKitItems = (kit.getEnderChestContents() != null && kit.getEnderChestContents().getItems() != null)
+                ? kit.getEnderChestContents().getItems()
+                : Collections.emptyMap();
+
+        // Iterate ALL ender chest slots
+        for (int slot = 0; slot < enderChest.getSize(); slot++) { // Use enderChest.getSize() (usually 27)
+            ItemStack itemFromKit = echestKitItems.get(slot);
+
+            // Set item from kit (clone) or null if kit doesn't define it for this slot
+            enderChest.setItem(slot, (itemFromKit != null && itemFromKit.getType() != Material.AIR) ? itemFromKit.clone() : null);
+
+            // Debug Logging for EChest
+            if (itemFromKit == null || itemFromKit.getType() == Material.AIR) {
+                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: EChest Slot %d CLEARED", slot)); // DEBUG
+            } else {
+                 String metaStr = itemFromKit.hasItemMeta() ? itemFromKit.getItemMeta().toString() : "null";
+                 metaStr = metaStr.substring(0, Math.min(metaStr.length(), 100));
+                 plugin.getMessageUtil().debug(String.format("applyKitToPlayer: EChest Slot %d SET to KitItem: %s Amount: %d Meta: %s...",
+                                                              slot, itemFromKit.getType(), itemFromKit.getAmount(), metaStr)); // DEBUG
+            }
+        }
+
+        // Update the player's inventory view
         player.updateInventory();
+        plugin.getMessageUtil().debug("applyKitToPlayer: Finished applying kit " + kit.getKitNumber() + " to " + player.getName()); // DEBUG
     }
 
 
@@ -370,8 +390,8 @@ public class KitManager {
                  if (kit != null) {
                      return kit;
                  } else {
-                     plugin.getMessageUtil().sendMessage(player, "last_kit_invalid");
-                     data.setLastLoadedKitNumber(-1); // Reset if kit no longer exists
+                     plugin.getMessageUtil().sendMessage(player, "last_kit_invalid", "kit_number", String.valueOf(lastKitNum)); // Added placeholder
+                     data.setLastLoadedKitNumber(-1);
                  }
              }
         }
@@ -391,7 +411,7 @@ public class KitManager {
         }
 
         if (kit.isGlobal() == isGlobal) {
-             plugin.getMessageUtil().sendActionBar(player, isGlobal ? "kit_already_global" : "kit_already_private", "kit_number", String.valueOf(kitNumber)); // Use action bar
+             plugin.getMessageUtil().sendActionBar(player, isGlobal ? "kit_already_global" : "kit_already_private", "kit_number", String.valueOf(kitNumber));
              return CompletableFuture.completedFuture(null);
         }
 
@@ -402,58 +422,50 @@ public class KitManager {
          }
 
         Kit updatedKit = kit.toBuilder().global(isGlobal).build();
-        playerData.setKit(kitNumber, updatedKit); // Update memory
+        playerData.setKit(kitNumber, updatedKit);
 
-        // Use appropriate storage method based on target status
-        CompletableFuture<Void> storageFuture = isGlobal
-                ? plugin.getStorageHandler().saveGlobalKit(updatedKit)
-                : plugin.getStorageHandler().deleteGlobalKit(player.getUniqueId(), kitNumber); // deleteGlobalKit marks as false in storage
+        CompletableFuture<Void> storageFuture;
+         if (isGlobal) {
+             storageFuture = plugin.getStorageHandler().saveGlobalKit(updatedKit);
+         } else {
+             storageFuture = plugin.getStorageHandler().deleteGlobalKit(player.getUniqueId(), kitNumber);
+         }
 
         return storageFuture.thenRunAsync(() -> {
-                 // Update global cache after storage operation succeeds
                  if (isGlobal) {
                      addGlobalKitToCache(updatedKit);
                  } else {
                      removeGlobalKitFromCache(player.getUniqueId(), kitNumber);
                  }
-                 plugin.getMessageUtil().sendActionBar(player, isGlobal ? "kit_set_global" : "kit_set_private", "kit_number", String.valueOf(kitNumber)); // Use action bar
+                 plugin.getMessageUtil().sendActionBar(player, isGlobal ? "kit_set_global" : "kit_set_private", "kit_number", String.valueOf(kitNumber));
                  plugin.getMessageUtil().playSound(player, "gui_click");
              }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
               .exceptionally(ex -> {
                  plugin.getMessageUtil().logException("Failed to update global status for kit " + kitNumber + " player " + player.getUniqueId(), ex);
-                 playerData.setKit(kitNumber, kit); // Revert memory change on failure
-                  if (isGlobal) removeGlobalKitFromCache(player.getUniqueId(), kitNumber); else addGlobalKitToCache(kit); // Revert cache
+                 playerData.setKit(kitNumber, kit);
+                  if (isGlobal) removeGlobalKitFromCache(player.getUniqueId(), kitNumber); else addGlobalKitToCache(kit);
                  plugin.getMessageUtil().sendMessage(player, "error");
                  return null;
               });
     }
 
-    // Helper to repair all damageable items in a kit's contents in memory (doesn't save automatically)
     public boolean repairKitItems(Kit kit) {
-        if (kit == null || kit.getContents() == null || kit.getContents().getItems().isEmpty()) {
-            return false;
-        }
-
+        if (kit == null) return false;
          boolean repaired = false;
-         for (ItemStack item : kit.getContents().getItems().values()) {
-             if (item != null && item.getItemMeta() instanceof Damageable) {
-                 Damageable meta = (Damageable) item.getItemMeta();
-                 if (meta.hasDamage()) {
-                     meta.setDamage(0);
-                     item.setItemMeta(meta);
-                     repaired = true;
+         if (kit.getContents() != null && kit.getContents().getItems() != null) {
+             for (ItemStack item : kit.getContents().getItems().values()) {
+                 if (item != null && item.getItemMeta() instanceof Damageable meta) {
+                     if (meta.hasDamage()) {
+                         meta.setDamage(0); item.setItemMeta(meta); repaired = true;
+                     }
                  }
              }
          }
-        // Also repair Ender Chest items?
-         if (kit.getEnderChestContents() != null) {
+         if (kit.getEnderChestContents() != null && kit.getEnderChestContents().getItems() != null) {
               for (ItemStack item : kit.getEnderChestContents().getItems().values()) {
-                  if (item != null && item.getItemMeta() instanceof Damageable) {
-                     Damageable meta = (Damageable) item.getItemMeta();
+                  if (item != null && item.getItemMeta() instanceof Damageable meta) {
                      if (meta.hasDamage()) {
-                         meta.setDamage(0);
-                         item.setItemMeta(meta);
-                         repaired = true;
+                         meta.setDamage(0); item.setItemMeta(meta); repaired = true;
                      }
                   }
               }
@@ -461,8 +473,6 @@ public class KitManager {
          return repaired;
     }
 
-
-    // Static helper, maybe move to a Util class if used elsewhere
     public static int mapEditorSlotToPlayerInvSlot(int editorSlot) {
          if (editorSlot >= 0 && editorSlot <= 40) return editorSlot;
          return -1;
@@ -473,17 +483,24 @@ public class KitManager {
          return -1;
     }
 
-    // Copied from UtilityService for internal use
+    // Helper to safely set items in player inventory, handling armor/offhand slots
     private void setItemSafe(PlayerInventory inv, int slot, ItemStack item) {
-        if (item == null || slot < 0 || slot > 40) return;
+        if (slot < 0 || slot > 40) return;
+        ItemStack itemToSet = (item == null || item.getType() == Material.AIR) ? null : item; // Use null for AIR/null
+
         switch (slot) {
-            case 36: inv.setBoots(item); break; // Armor slots direct mapping
-            case 37: inv.setLeggings(item); break;
-            case 38: inv.setChestplate(item); break;
-            case 39: inv.setHelmet(item); break;
-            case 40: inv.setItemInOffHand(item); break; // Offhand
-            default: inv.setItem(slot, item); break; // Main inventory 0-35
+            case 36: inv.setBoots(itemToSet); break;
+            case 37: inv.setLeggings(itemToSet); break;
+            case 38: inv.setChestplate(itemToSet); break;
+            case 39: inv.setHelmet(itemToSet); break;
+            case 40: inv.setItemInOffHand(itemToSet); break;
+            default: inv.setItem(slot, itemToSet); break;
         }
     }
-}
 
+    // Helper to safely clear items from specific slots
+    private void clearItemSafe(PlayerInventory inv, int slot) {
+        setItemSafe(inv, slot, null);
+    }
+}
+// ========== END COMPLETE REVISED KitManager.java ==========

@@ -1,7 +1,8 @@
 /.classpath
 /.factorypath
 /.project
-/.vscode
 /dependency-reduced-pom.xml
 /src_before_logging.tar.gz
 /target
+/final.tar.gz
+/final_pre.tar.gz

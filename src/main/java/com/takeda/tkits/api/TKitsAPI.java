@@ -1,6 +1,8 @@
+// ========== JAVA FILE: com/takeda/tkits/api/TKitsAPI.java ==========
 package com.takeda.tkits.api;
 
 import com.takeda.tkits.models.Kit;
+import net.kyori.adventure.text.Component; // Added for GUI Title
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -48,7 +50,6 @@ public interface TKitsAPI {
      */
     CompletableFuture<Optional<Kit>> getPlayerKitAsync(UUID playerUUID, int kitNumber);
 
-
      /**
       * Gets all kits belonging to a player.
       * <p>
@@ -70,7 +71,6 @@ public interface TKitsAPI {
       *         The future may complete exceptionally on storage errors.
       */
      CompletableFuture<Map<Integer, Kit>> getAllPlayerKitsAsync(UUID playerUUID);
-
 
      /**
       * Loads a specific kit onto a player, replacing their inventory, armor, offhand,
@@ -95,7 +95,6 @@ public interface TKitsAPI {
       * @return The last loaded kit number, or -1.
       */
      int getLastLoadedKitNumber(Player player);
-
 
       /**
       * Gets a list of all currently cached global kits. The list is sorted for consistency.
@@ -149,5 +148,44 @@ public interface TKitsAPI {
          * @return True if the arrange process was completed successfully, false if no kit was loaded, player is on cooldown, or an error occurred.
          */
         boolean performArrange(Player player);
+
+    // --- NEW API METHODS ---
+
+    /**
+     * Gets the Kit object corresponding to the kit number the player last loaded
+     * using a T-Kits load action in their current session.
+     * <p>
+     * This retrieves the Kit data from the player's current cache. Note that
+     * the returned Kit represents the kit's state *now*, which might differ
+     * from the items the player physically has if the kit was edited *after*
+     * it was loaded. This reflects the kit definition used for subsequent
+     * /regear or /arrange actions. A clone of the Kit object is returned.
+     * <p>
+     * This operation accesses cached data and is suitable for the main thread.
+     *
+     * @param player The online player.
+     * @return An Optional containing a clone of the Kit object if a kit was loaded this session
+     *         and player data is available, otherwise Optional.empty().
+     */
+    Optional<Kit> getCurrentLoadedKit(Player player);
+
+    /**
+     * Opens a GUI for the player to select one of their personal kits.
+     * <p>
+     * This method returns immediately with a CompletableFuture. The future
+     * completes when the player selects a kit in the GUI, cancels the selection
+     * (closes the GUI or clicks Cancel), or if an error prevents selection
+     * (e.g., player logs out, player has no kits).
+     * <p>
+     * The operation occurs asynchronously and the GUI interaction happens on the main thread.
+     *
+     * @param player   The player who needs to choose a kit.
+     * @param guiTitle The title Component to display at the top of the selection GUI.
+     *                 Use {@link com.takeda.tkits.util.MessageUtil#deserialize(String)} to create this.
+     * @return A CompletableFuture that will complete with:
+     *         - Optional.of(Kit): If the player successfully selected a kit. The Kit object is a clone/snapshot.
+     *         - Optional.empty(): If the player cancelled, logged out, has no kits, or an error occurred.
+     */
+    CompletableFuture<Optional<Kit>> choosePersonalKit(Player player, Component guiTitle);
 
 }

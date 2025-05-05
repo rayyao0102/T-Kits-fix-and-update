@@ -2,7 +2,7 @@ name: T-Kits
 version: ${project.version}
 main: com.takeda.tkits.TKits
 api-version: '1.21'
-author: Takeda_Dev
+author: Takeda
 description: ${project.description}
 depend: [PlaceholderAPI]
 

@@ -1,7 +1,10 @@
 package com.takeda.tkits.listeners;
 
 import com.takeda.tkits.TKits;
+import com.takeda.tkits.managers.GuiManager; // Added
 import com.takeda.tkits.managers.PlayerDataManager;
+import com.takeda.tkits.models.Kit; // Added
+import java.util.Optional; // Added
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,10 +18,12 @@ public class PlayerListener implements Listener {
 
     private final TKits plugin;
     private final PlayerDataManager playerDataManager;
+    private final GuiManager guiManager; // Added
 
     public PlayerListener(TKits plugin) {
         this.plugin = plugin;
         this.playerDataManager = plugin.getPlayerDataManager();
+        this.guiManager = plugin.getGuiManager(); // Added
     }
 
     @EventHandler(priority = EventPriority.LOW) // Load data early
@@ -26,16 +31,16 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        // Load data async, handle potential failures during load
         playerDataManager.loadPlayerData(uuid)
             .exceptionally(ex -> {
-                 // Log detailed error
                  plugin.getMessageUtil().logException("CRITICAL error loading data for player " + player.getName() + " (" + uuid + ") on join!", ex);
-                 // Kick player to prevent data corruption/issues? Ensure message uses Component.
-                 plugin.getServer().getScheduler().runTask(plugin, () -> // Schedule kick for main thread
-                      player.kick(plugin.getMessageUtil().deserialize("&cError loading your T-Kits data. Please report this and reconnect."))
-                 );
-                return null; // Complete exceptionally, PlayerData might be null/empty downstream initially
+                 plugin.getServer().getScheduler().runTask(plugin, () -> {
+                     // Check if player is still online before kicking
+                     if (player.isOnline()) {
+                         player.kick(plugin.getMessageUtil().deserialize("&cError loading your T-Kits data. Please report this and reconnect."));
+                     }
+                 });
+                return null;
             });
     }
 
@@ -43,7 +48,12 @@ public class PlayerListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        // Unload data, potentially saving if configured (default is save on shutdown)
+
+        // --- NEW: Cancel pending kit choice on quit ---
+        plugin.getMessageUtil().debug("[Quit] Cancelling any pending kit choice for " + player.getName());
+        guiManager.cancelPendingKitChoice(uuid, Optional.empty());
+        // --- End New ---
+
         playerDataManager.unloadPlayerData(uuid, false); // False = Don't trigger save here, rely on shutdown/periodic
     }
 }

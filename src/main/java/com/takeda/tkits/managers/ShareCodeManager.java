@@ -8,7 +8,6 @@ import com.takeda.tkits.models.KitContents;
 import com.takeda.tkits.models.PlayerData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -92,12 +91,15 @@ public class ShareCodeManager {
      */
     public String generateShareCodeFromKit(UUID ownerUUID, Kit kit) {
         if (kit == null) return null;
+        plugin.getMessageUtil().debug("generateShareCodeFromKit: Entered for kit " + kit.getKitNumber() + " owner " + ownerUUID); // DEBUG
 
         // --- Config Check ---
         boolean allowGlobalShare = plugin.getConfigManager().isAllowSharingGlobalKits();
         if (kit.isGlobal() && !allowGlobalShare) {
-            plugin.getMessageUtil().sendMessage(Bukkit.getPlayer(ownerUUID), "cannot_share_global_kit"); // Add message
-            plugin.getMessageUtil().playSound(Bukkit.getPlayer(ownerUUID), "error");
+            plugin.getMessageUtil().debug("generateShareCodeFromKit: Failed - Cannot share global kit."); // DEBUG
+            // Message sending is handled by GuiManager now
+            // plugin.getMessageUtil().sendMessage(Bukkit.getPlayer(ownerUUID), "cannot_share_global_kit"); // Add message
+            // plugin.getMessageUtil().playSound(Bukkit.getPlayer(ownerUUID), "error");
             return null;
         }
         // --- End Config Check ---
@@ -110,6 +112,7 @@ public class ShareCodeManager {
             // Generate using only letters and numbers for easier typing
             code = RandomStringUtils.randomAlphanumeric(codeLength).toUpperCase();
             if (retries++ > maxRetries) {
+                plugin.getMessageUtil().debug("generateShareCodeFromKit: Failed - Max retries reached."); // DEBUG
                 plugin.getMessageUtil().logSevere("Failed to generate a unique share code after " + maxRetries + " attempts for kit " + kit.getKitNumber() + " from " + ownerUUID);
                 // Don't send message here as it might be called async without player context
                 return null;
@@ -127,6 +130,7 @@ public class ShareCodeManager {
 
         ShareData data = new ShareData(ownerUUID, sharedKitCopy, codeOneTimeUse);
         shareCodeCache.put(code, data);
+        plugin.getMessageUtil().debug("generateShareCodeFromKit: Generated code " + code); // DEBUG
         plugin.getLogger().info("Generated share code " + code + " for kit " + kit.getKitNumber() + " from " + ownerUUID + ".");
 
         return code;

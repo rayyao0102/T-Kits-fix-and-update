@@ -1,9 +1,9 @@
 # T-Kits Configuration v1.0
-# A comprehensive kit management plugin by Takeda
 
 #-----------------------------------------
 # General Settings
 #-----------------------------------------
+
 debug: false # Enable verbose logging for debugging purposes
 
 #-----------------------------------------
@@ -11,7 +11,7 @@ debug: false # Enable verbose logging for debugging purposes
 #-----------------------------------------
 storage:
   type: YAML # Available types: YAML, MYSQL
-  
+
   # MySQL Database Settings (only used if type is set to MYSQL)
   mysql:
     host: "localhost"
@@ -21,7 +21,7 @@ storage:
     password: "password"
     useSSL: false
     connection_options: "?autoReconnect=true&useUnicode=true&characterEncoding=utf8"
-    
+
     # Connection Pool Configuration
     pool_settings:
       maximum_pool_size: 10
@@ -35,18 +35,30 @@ storage:
 #-----------------------------------------
 kits:
   max_kits_per_player: 7        # Maximum number of kits each player can save
-  save_on_editor_close: true    # Automatically save kits when closing the editor
+  save_on_editor_close: true    # Automatically save kits when closing the editor (ESC key, etc.)
   clear_kit_requires_confirmation: true  # Ask for confirmation before clearing a kit
-  
+
   # Inventory Handling
   clear_inventory_on_load: false  # Whether to clear player inventory before applying a kit
   load_requires_empty_inventory: false  # Prevent loading if inventory isn't empty
-  
+
   # Restrictions
   prevent_load_in_worlds: []     # List of worlds where kit loading is disabled
                                  # Example: ["world_nether", "resource_world"]
-  prevent_save_items: []         # List of Material names that cannot be saved in kits
-                                 # Example: ["BEDROCK", "COMMAND_BLOCK"]
+  prevent_save_items:           # List of Material names that cannot be saved in kits
+    - "BEDROCK"
+    - "COMMAND_BLOCK"
+    - "COMMAND_BLOCK_MINECART"
+    - "CHAIN_COMMAND_BLOCK"
+    - "REPEATING_COMMAND_BLOCK"
+    - "STRUCTURE_BLOCK"
+    - "STRUCTURE_VOID"
+    - "JIGSAW"
+    - "BARRIER"
+    - "LIGHT"
+    - "PLAYER_HEAD" # Often problematic to store reliably across versions/plugins
+    - "KNOWLEDGE_BOOK"
+
   max_total_items_in_kit: -1     # Limit total item count in a kit, -1 for unlimited
 
 #-----------------------------------------
@@ -64,151 +76,157 @@ sharing:
 combat_tag:
   enabled: true
   duration_seconds: 10
-  
-  # Commands blocked during combat (lowercase)
+
+  # Commands blocked during combat (lowercase, ensure commands exist)
   blocked_commands:
-    - "k1"
-    - "k2"
-    - "k3"
-    - "k4"
-    - "k5"
-    - "k6"
-    - "k7"
-    - "regear"
-    - "rg"
-    - "arrange"
-    - "ag"
-  
+    - "/k1"
+    - "/k2"
+    - "/k3"
+    - "/k4"
+    - "/k5"
+    - "/k6"
+    - "/k7"
+    - "/regear"
+    - "/rg"
+    - "/arrange"
+    - "/ag"
+    - "/kit" # Block main kit GUI access too?
+    - "/spawn"
+    - "/home"
+    - "/tpa"
+    # Add other commands like /warp, /trade etc. as needed
+
   prevent_enderpearl: false  # Prevent Ender Pearl use while tagged
-  # external_plugin_hook: ""  # Optional: Specify external plugin name (e.g., "CombatLogX")
 
 #-----------------------------------------
 # Command Cooldowns (in seconds)
 #-----------------------------------------
 cooldowns:
-  kit_load: 3    # Cooldown for /k1 - /k7 commands
-  regear: 10     # Cooldown for regear command
-  arrange: 5     # Cooldown for arrange command
+  kit_load: 3    # Cooldown for /k1 - /k7 commands AND loading global kits
+  regear: 10     # Cooldown for regear command/action
+  arrange: 5     # Cooldown for arrange command/action
 
 #-----------------------------------------
 # Regear & Arrange Settings
 #-----------------------------------------
 regear:
-  box_material: SHULKER_BOX  # Material for the regear box
-  box_name: "&aRegear Box for {player}"  # Name for the regear box item
+  box_material: SHULKER_BOX  # Material for the regear box trigger item
+  box_name: "&bRegear Box &7(Place Me)"  # Name for the regear box item
 
 arrange:
   # How /arrange handles items not in kit layout:
-  # KEEP - Keep extra items in inventory
-  # DROP - Drop items on the ground
-  # MOVE_EMPTY - Move items to empty slots
-  handle_extra_items: "KEEP"
+  # KEEP - Keep extra items in inventory (might be messy)
+  # DROP - Drop items on the ground (can cause lag/loss)
+  # MOVE_EMPTY - Move items to empty slots first, then drop if still no space (Recommended)
+  handle_extra_items: "MOVE_EMPTY"
 
 #-----------------------------------------
 # Kitroom Settings
 #-----------------------------------------
 kitroom:
   require_per_category_permission: false  # If true, requires tkits.kitroom.category.<categoryname>
-  item_take_cooldown_seconds: 0           # Cooldown between taking items
+  item_take_cooldown_seconds: 1           # Cooldown between taking items (e.g., 1 second)
 
 #-----------------------------------------
-# Sound Effects
+# Sound Effects (Modern & Aesthetic)
 #-----------------------------------------
 sounds:
-  # UI Sounds
   gui_click: "UI_BUTTON_CLICK"
-  confirmation_open: "BLOCK_NOTE_BLOCK_BELL"
-  confirmation_confirm: "ENTITY_ARROW_HIT_PLAYER"
+  confirmation_open: "BLOCK_NOTE_BLOCK_PLING"
+  confirmation_confirm: "ENTITY_EXPERIENCE_ORB_PICKUP"
   confirmation_cancel: "BLOCK_CHEST_CLOSE"
   cooldown: "BLOCK_NOTE_BLOCK_BASS"
-  error: "BLOCK_NOTE_BLOCK_PLING"
-  
-  # Kit Operation Sounds
-  kit_load: "ENTITY_PLAYER_LEVELUP"
-  kit_save: "BLOCK_SMITHING_TABLE_USE"
+  error: "ENTITY_VILLAGER_NO"
+  kit_load: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  kit_save: "ENTITY_PLAYER_LEVELUP"
   kit_share: "ENTITY_ITEM_FRAME_ADD_ITEM"
   repair_success: "BLOCK_ANVIL_USE"
-  repair_fail: "BLOCK_ANVIL_DESTROY"
-
-  # Import/Export Sounds
-  kit_import_success: "ITEM_TRIDENT_RETURN"
-  kit_import_fail: "BLOCK_CHAIN_BREAK"
-  
-  # Other Function Sounds
-  regear_success: "ENTITY_ITEM_PICKUP"
-  arrange_success: "BLOCK_PISTON_EXTEND"
+  repair_fail: "ENTITY_ITEM_BREAK"
+  kit_import_success: "ENTITY_PLAYER_LEVELUP"
+  kit_import_fail: "BLOCK_ANVIL_LAND"
+  regear_success: "ENTITY_CHICKEN_STEP"
+  arrange_success: "ENTITY_CHICKEN_STEP"
+  kitroom_item_take: "ENTITY_ITEM_PICKUP"
 
 #-----------------------------------------
-# Messages
+# Messages (Modern, High-Contrast, Aesthetic)
 #-----------------------------------------
 messages:
-  prefix: "&8[&2T-&aKits&8] &r"
-  
+  prefix: "&8[&dT&5-&dKits&8] &f&l" # Modern purple/white gradient
+
   # General Messages
-  no_permission: "&c❌ You do not have permission."
-  player_only: "&c❌ This command is for players only."
-  data_loading_please_wait: "&e⌛ Your data is loading, please try again shortly."
-  error: "&c✗ An unexpected error occurred."
-  info_placeholder: "&b! This plugin is T-Kits v{version} by Takeda."
-  plugin_reloaded: "&a✓ T-Kits configuration reloaded."
-  feature_not_implemented: "&c✗ This feature is not yet implemented."
-  invalid_kit_number: "&c✗ Invalid kit number (1-{max_kits})."
-  
+  no_permission: "&c&l✖ &fYou do not have permission to do that."
+  player_only: "&c&l✖ &fThis command can only be executed by players."
+  data_loading_please_wait: "&b&l⌛ &fYour data is loading, please wait..."
+  error: "&c&l❗ &fAn unexpected error occurred. Please contact an administrator."
+  info_placeholder: "&d&lℹ &fThis server uses &dT-Kits &f(v{version}) &7by &bTakeda_Dev&7."
+  plugin_reloaded: "&a&l✔ &fT-Kits configuration reloaded successfully."
+  feature_not_implemented: "&e&l⚠ &fThis feature is not yet available."
+  invalid_kit_number: "&c&l❗ &fInvalid kit number. Use a number between 1 and {max_kits}."
+  gui_action_expired: "&c&l❗ &fThis action has expired or your state changed. Please try again."
+
   # Kit Operation Messages
-  kit_loaded: "&a✓ Kit {kit_number} loaded."
-  kit_saved: "&a✓ Kit {kit_number} saved."
-  kit_not_found: "&c✗ Kit {kit_number} not found."
-  kit_cleared: "&e✓ Kit {kit_number} cleared."
-  kit_repaired: "&6✓ Items in kit {kit_number} repaired."
-  kit_repair_failed: "&c✗ No repairable items found in kit {kit_number}."
-  kit_enderchest_saved: "&a✓ Enderchest for Kit {kit_number} saved."
-  cannot_save_forbidden_item: "&c✗ Cannot save forbidden item type: {item}."
-  cannot_save_forbidden_item_echest: "&c✗ Cannot save forbidden item type in Ender Chest: {item}."
-  kit_exceeds_max_items: "&c✗ Kit contains {count} items, exceeding the maximum of {max}."
-  no_kit_loaded_yet: "&c✗ No kit has been loaded in this session."
-  last_kit_invalid: "&c✗ Your last loaded kit no longer exists."
-  inventory_imported: "&a✓ Inventory imported to Kit {kit_number}."
-  inventory_loaded_to_gui: "&a✓ Current inventory loaded into editor."
-  inventory_full_item_dropped: "&c! Inventory full, some items were dropped!"
-  clear_confirmation_required: "&e! Click 'Clear Kit' again to confirm."
-  
+  kit_loaded: "&a&l✔ &fKit &b{kit_number} &floaded."
+  kit_saved: "&a&l✔ &fKit &b{kit_number} &fsaved."
+  kit_not_found: "&c&l❗ &fKit &b{kit_number} &fnot found."
+  kit_cleared: "&e&l✔ &fKit &b{kit_number} &fcleared."
+  kit_repaired: "&a&l✔ &fItems in kit &b{kit_number} &frepaired."
+  kit_repair_failed: "&e&lℹ &fNo repairable items found in kit &b{kit_number}&f."
+  kit_enderchest_saved: "&a&l✔ &fEnder Chest for Kit &b{kit_number} &fsaved."
+  cannot_save_forbidden_item: "&c&l✖ &fCannot save forbidden item: &e{item}&f."
+  cannot_save_forbidden_item_echest: "&c&l✖ &fCannot save forbidden item in Ender Chest: &e{item}&f."
+  kit_exceeds_max_items: "&c&l❗ &fKit has &e{count}&f items, exceeding the limit of &e{max}&f."
+  no_kit_loaded_yet: "&e&lℹ &fYou haven't loaded a kit in this session."
+  last_kit_invalid: "&c&l❗ &fYour last loaded kit (&b{kit_number}&f) seems to be missing."
+  inventory_loaded_to_gui: "&a&l✔ &fCurrent inventory loaded into editor."
+  clear_confirmation_required: "&e&l⚠ &fClick 'Clear Kit' again to confirm deletion!"
+
   # Global Kit Messages
-  kit_set_global: "&a✓ Kit {kit_number} set to global."
-  kit_set_private: "&a✓ Kit {kit_number} set to private."
-  kit_already_global: "&e! Kit {kit_number} is already global."
-  kit_already_private: "&e! Kit {kit_number} is already private."
-  no_global_kits_available: "&c✗ There are no global kits available yet."
-  kit_no_longer_global: "&c✗ That kit is no longer global or has been deleted."
-  cannot_set_unsaved_global: "&c✗ You must save the kit before setting it as global."
-  must_save_kit_first: "&e! Please save the kit before changing its global/private status."
-  
+  kit_set_global: "&a&l✔ &fKit &b{kit_number} &fset to &6Global&f."
+  kit_set_private: "&a&l✔ &fKit &b{kit_number} &fset to &7Private&f."
+  kit_already_global: "&e&lℹ &fKit &b{kit_number} &fis already &6Global&f."
+  kit_already_private: "&e&lℹ &fKit &b{kit_number} &fis already &7Private&f."
+  no_global_kits_available: "&e&lℹ &fThere are currently no global kits available."
+  kit_no_longer_global: "&c&l❗ &fThat kit is no longer global or has been removed."
+  cannot_set_unsaved_global: "&c&l✖ &fYou must save the kit before making it global."
+  must_save_kit_first: "&e&lℹ &fPlease save the kit before changing its global/private status."
+  loading_kit_preview: "&b&l⌛ &fLoading kit preview..."
+  loading_kit: "&b&l⌛ &fLoading kit {kit_number}..."
+
   # Share/Import Messages
-  generating_share_code: "&e⌛ Generating share code..."
-  share_code_generated: "&a✓ Share code for Kit {kit_number}: &e{code}&a. Expires in {time} minutes."
-  importing_kit: "&e⌛ Importing kit..."
-  import_success: "&a✓ Kit successfully imported to Kit {kit_number}."
-  import_fail_invalid_code: "&c✗ Invalid or expired import code."
-  import_fail_no_slot: "&c✗ No empty kit slot available for import."
-  import_fail_error: "&c✗ An error occurred during import."
-  
+  generating_share_code: "&d&l⌛ &fGenerating share code..."
+  share_code_generated: "&a&l✔ &fShare code for Kit &b{kit_number}&f: &e{code} &7(Expires in &e{time}&7m)"
+  importing_kit: "&b&l⌛ &fImporting kit..."
+  import_success: "&a&l✔ &fKit imported successfully to slot &b{kit_number}&f."
+  import_fail_invalid_code: "&c&l✖ &fInvalid or expired import code."
+  import_fail_no_slot: "&c&l✖ &fNo empty kit slots available to import into."
+  import_fail_error: "&c&l✖ &fAn error occurred while importing the kit."
+  cannot_share_global_kit: "&c&l✖ &fGlobal kits cannot be shared with codes (if disabled in config)."
+
   # Regear/Arrange Messages
-  regear_started: "&e⌛ Regearing..."
-  regear_success: "&a✓ Regear completed."
-  regear_shulker_given: "&a✓ Regear Box given. Place it to use."
-  not_your_regear_box: "&c✗ That's not your regear box."
-  arrange_started: "&e⌛ Arranging inventory..."
-  arrange_success: "&a✓ Inventory arranged."
-  inventory_full_items_dropped_arrange: "&c! Inventory full, extra items dropped after arrange!"
-  
+  regear_started: "&b&l⌛ &fAttempting regear..."
+  regear_success: "&a&l✔ &fInventory regeared."
+  regear_shulker_given: "&a&l✔ &fRegear Box Placed! &7Right-click to open."
+  not_your_regear_box: "&c&l✖ &fThis is not your regear box."
+  arrange_started: "&b&l⌛ &fArranging inventory..."
+  arrange_success: "&a&l✔ &fInventory arranged."
+  inventory_full_item_dropped: "&e&l⚠ &fInventory full, some items were dropped on the ground!"
+  inventory_full_items_dropped_arrange: "&e&l⚠ &fInventory full, extra items dropped after arrange!"
+  inventory_arrange_kept_extras: "&e&lℹ &fInventory arranged. Extra items remain."
+
   # Combat & Cooldown Messages
-  in_combat: "&c✗ Can't use this in combat! ({time}s left)"
-  on_cooldown: "&c⌛ Please wait {time}s before using this again."
-  
+  in_combat: "&c&l⚔ &fIn Combat! &7Action prevented (&e{time}s&7 left)."
+  on_cooldown: "&b&l⏳ &fCooldown Active! &7Please wait &e{time}s&7."
+
   # Migration Messages
-  migration_started: "&e⌛ Starting data migration from {from} to {to}..."
-  migration_success: "&a✓ Data migration completed."
-  migration_failed: "&c✗ Data migration failed. See console."
-  
+  migration_started: "&d&l⌛ &fStarting data migration from &e{from}&f to &e{to}&f..."
+  migration_success: "&a&l✔ &fData migration completed successfully."
+  migration_failed: "&c&l✖ &fData migration failed. Check console for errors."
+
   # Kitroom Messages
-  kitroom_category_saved: "&a✓ Kitroom category '{category}' saved."
-  kitroom_item_given: "&a✓ Received {amount}x {item_name} from kitroom."
+  kitroom_category_saved: "&a&l✔ &fKitroom category '&b{category}&f' saved."
+  kitroom_item_given: "&a&l✔ &fReceived &b{amount}x {item_name}&f."
+  kitroom_on_cooldown: "&b&l⏳ &fKitroom Cooldown! &7Please wait &e{time}s&7."
+  no_permission_category: "&c&l✖ &fYou don't have permission for the &e{category}&f kitroom category."
+  no_kits_to_choose: "&e&lℹ &fYou don't have any kits saved to choose from." # Added for kit choice API
+  already_choosing_kit: "&e&l⚠ &fYou are already in the process of choosing a kit." # Added for kit choice API

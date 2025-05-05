@@ -8,7 +8,6 @@ import com.takeda.tkits.managers.KitManager;
 import com.takeda.tkits.services.CooldownService;
 import org.bukkit.entity.Player;
 
-// Handles /k1, /k2, ... /k7
 public class DirectKitLoadCommands extends BaseCommand {
 
     private final TKits plugin;
