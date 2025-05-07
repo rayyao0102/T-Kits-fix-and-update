@@ -89,7 +89,7 @@ if (provider != null) {
 
 ## 💬 Support & Community
 - [💬 Discord](#) — Community & staff support
-- [📚 Documentation](#https://tkits-docs.tiiny.site/) — Guides, FAQs, and API docs
+- [📚 Documentation](https://tkits-docs.tiiny.site/) — Guides, FAQs, and API docs
 - [🐛 GitHub Issues](#) — Bug reports & feature requests
 
 ---
