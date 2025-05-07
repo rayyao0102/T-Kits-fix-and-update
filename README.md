@@ -2,6 +2,8 @@
 
 Welcome to **T-Kits**! The all-in-one, modern, and powerful kit management plugin for Minecraft servers. Whether you're running a competitive PvP network or a cozy SMP, T-Kits brings you next-level features, beautiful GUIs, and a developer-friendly API—all with blazing performance and reliability.
 
+Find the detailed documentation here: [Click here for docs](https://tkits-docs.tiiny.site/)
+
 ---
 
 ## 🚀 Features
