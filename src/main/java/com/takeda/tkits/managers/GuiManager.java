@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.wesjd.anvilgui.AnvilGUI; // Shaded AnvilGUI
+import net.wesjd.anvilgui.AnvilGUI; 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -36,7 +36,7 @@ import org.bukkit.persistence.PersistentDataType;
 @Getter
 public class GuiManager implements InventoryHolder {
 
-    // --- Fields ---
+    
     private final TKits plugin;
     private final MessageUtil msg;
     private final KitManager kitManager;
@@ -51,35 +51,35 @@ public class GuiManager implements InventoryHolder {
 
     private FileConfiguration guiConfig;
 
-    // Player state tracking
+    
     private final Map<UUID, String> editingKitroomCategory = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerGlobalKitPages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> confirmClickCooldown = new ConcurrentHashMap<>();
-    private final Map<UUID, CompletableFuture<Optional<Kit>>> pendingKitChoices = new ConcurrentHashMap<>(); // Added
+    private final Map<UUID, CompletableFuture<Optional<Kit>>> pendingKitChoices = new ConcurrentHashMap<>(); 
 
-    // GUI History and state
+    
     private final Map<UUID, Deque<GuiState>> guiHistory = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> wasGuiClosedByButton = new ConcurrentHashMap<>();
 
-    // Cached Filler Item Instances
+    
     private ItemStack kitroomFillerInstance;
     private ItemStack kitroomButtonAreaFillerInstance;
     private ItemStack editorButtonAreaFillerInstance;
 
-    // Use public visibility if nested, otherwise package-private if top-level in package
-    // Now uses the external GuiIdentifier enum
+    
+    
     record GuiState(GuiIdentifier identifier, Map<String, Object> context) {}
 
-    // --- Public Getters for State ---
+    
     public Map<UUID, Integer> getPlayerGlobalKitPagesMap() { return this.playerGlobalKitPages; }
     public Map<UUID, String> getEditingKitroomCategoryMap() { return this.editingKitroomCategory; }
-    public Map<UUID, CompletableFuture<Optional<Kit>>> getPendingKitChoicesMap() { return this.pendingKitChoices; } // Added Getter
+    public Map<UUID, CompletableFuture<Optional<Kit>>> getPendingKitChoicesMap() { return this.pendingKitChoices; } 
 
-    // --- Constants ---
+    
     public final Component KITROOM_ADMIN_LORE_HINT;
     public final Component KITROOM_PLAYER_LORE_HINT;
 
-    // --- Constructor ---
+    
     public GuiManager(TKits plugin) {
         this.plugin = plugin;
         this.msg = plugin.getMessageUtil();
@@ -93,26 +93,26 @@ public class GuiManager implements InventoryHolder {
         this.categoryKey = new NamespacedKey(plugin, "tkits_category");
         this.pageKey = new NamespacedKey(plugin, "tkits_page");
 
-        reloadGuiConfig(); // Load initial configs and fillers
+        reloadGuiConfig(); 
 
         this.KITROOM_ADMIN_LORE_HINT = msg.deserialize("&c&lAdmin: &7Moving items modifies layout.");
         this.KITROOM_PLAYER_LORE_HINT = msg.deserialize("&b▸ Click to Take Item");
     }
 
-    // Method to reload GUI config data and cached items
+    
     public void reloadGuiConfig() {
         this.guiConfig = configManager.getGuiConfig();
         plugin.getLogger().info("Reloading GUI configuration items...");
 
-        // Load cached filler instances
+        
         this.kitroomFillerInstance = loadGuiItem("items.kitroom_category.filler", Material.BLACK_STAINED_GLASS_PANE, "&r", null);
-        this.kitroomButtonAreaFillerInstance = this.kitroomFillerInstance; // Default to same as main kitroom filler
+        this.kitroomButtonAreaFillerInstance = this.kitroomFillerInstance; 
         this.editorButtonAreaFillerInstance = loadGuiItem("items.kit_editor.button_area_filler", Material.GRAY_STAINED_GLASS_PANE, "&r", null);
 
         msg.debug("GUI configuration reloaded.");
     }
 
-    // --- Filler Check Methods ---
+    
     public boolean isKitroomFiller(ItemStack item) {
         if (item == null || kitroomFillerInstance == null) return false;
         return item.isSimilar(kitroomFillerInstance);
@@ -126,8 +126,8 @@ public class GuiManager implements InventoryHolder {
            return item.isSimilar(editorButtonAreaFillerInstance);
       }
 
-    // --- GUI History Management ---
-    // Now uses the external GuiIdentifier enum type
+    
+    
     public void pushGuiHistory(UUID playerUUID, GuiIdentifier identifier, Map<String, Object> context) {
         msg.debug("[HISTORY] Pushing GUI: " + identifier + " with context " + context + " for " + playerUUID);
         Map<String, Object> safeContext = context == null ? Collections.emptyMap() : new HashMap<>(context);
@@ -164,7 +164,7 @@ public class GuiManager implements InventoryHolder {
          guiHistory.remove(playerUUID);
          playerGlobalKitPages.remove(playerUUID);
          editingKitroomCategory.remove(playerUUID);
-         // Also clear pending choice on history clear
+         
          cancelPendingKitChoice(playerUUID, Optional.empty());
          msg.debug("[HISTORY] Cleared history and related state for " + playerUUID);
      }
@@ -193,16 +193,16 @@ public class GuiManager implements InventoryHolder {
          return context;
      }
 
-    // --- Specific GUI Opening Methods ---
-    // These methods now use the external GuiIdentifier.CONSTANT_NAME syntax
+    
+    
     public void openMainMenu(Player player) {
         UUID playerUUID = player.getUniqueId();
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
         if (playerData == null) { msg.sendMessage(player, "data_loading_please_wait"); return; }
         Inventory gui = createMainMenuInventory(player, playerData);
 
-        clearGuiHistory(playerUUID); // Clear history before opening main menu
-        pushGuiHistory(playerUUID, GuiIdentifier.MAIN_MENU, Collections.emptyMap()); // Uses external enum
+        clearGuiHistory(playerUUID); 
+        pushGuiHistory(playerUUID, GuiIdentifier.MAIN_MENU, Collections.emptyMap()); 
         player.openInventory(gui);
         msg.debug("[T-Kits] Opened main menu for player: " + player.getName());
     }
@@ -214,7 +214,7 @@ public class GuiManager implements InventoryHolder {
         if (playerData == null) { msg.sendMessage(player, "data_loading_please_wait"); return; }
         Inventory gui = createKitEditorInventory(player, playerData, kitNumber);
 
-        pushGuiHistory(playerUUID, GuiIdentifier.KIT_EDITOR, createContext("kitNumber", kitNumber)); // Uses external enum
+        pushGuiHistory(playerUUID, GuiIdentifier.KIT_EDITOR, createContext("kitNumber", kitNumber)); 
         player.openInventory(gui);
     }
 
@@ -226,7 +226,7 @@ public class GuiManager implements InventoryHolder {
          if (mainKit == null) { msg.sendMessage(player, "kit_not_found", "kit_number", String.valueOf(mainKitNumber)); msg.playSound(player, "error"); handleNavigationError(playerUUID, "openEnderChestEditor (kit not found)"); return; }
          Inventory gui = createEnderChestEditorInventory(player, mainKit);
 
-         pushGuiHistory(playerUUID, GuiIdentifier.ENDERCHEST_EDITOR, createContext("kitNumber", mainKitNumber)); // Uses external enum
+         pushGuiHistory(playerUUID, GuiIdentifier.ENDERCHEST_EDITOR, createContext("kitNumber", mainKitNumber)); 
          player.openInventory(gui);
          msg.debug("Opened Ender Chest Editor for Kit " + mainKitNumber + " for " + player.getName());
      }
@@ -236,7 +236,7 @@ public class GuiManager implements InventoryHolder {
         Inventory gui = createConfirmationInventory(actionToConfirm, kitNumber, title, confirmText, cancelText);
 
         Map<String, Object> context = createContext("confirmAction", actionToConfirm, "kitNumber", kitNumber);
-        pushGuiHistory(playerUUID, GuiIdentifier.CONFIRMATION, context); // Uses external enum
+        pushGuiHistory(playerUUID, GuiIdentifier.CONFIRMATION, context); 
         player.openInventory(gui);
         msg.debug("Opened Confirmation GUI for action " + actionToConfirm + " kit " + kitNumber + " for " + player.getName());
     }
@@ -248,12 +248,12 @@ public class GuiManager implements InventoryHolder {
 
         if (gui == null) {
             msg.sendMessage(player, "no_global_kits_available"); msg.playSound(player, "error");
-            handleNavigationBack(playerUUID); // Navigate back if no kits
+            handleNavigationBack(playerUUID); 
             return;
         }
 
         playerGlobalKitPages.put(playerUUID, page);
-        pushGuiHistory(playerUUID, GuiIdentifier.GLOBAL_KITS_LIST, createContext("page", page)); // Uses external enum
+        pushGuiHistory(playerUUID, GuiIdentifier.GLOBAL_KITS_LIST, createContext("page", page)); 
         player.openInventory(gui);
         msg.debug("Opened Global Kits list (Page " + page + ") for " + player.getName());
     }
@@ -263,7 +263,7 @@ public class GuiManager implements InventoryHolder {
         if (kitToPreview == null) { msg.sendMessage(player, "error"); handleNavigationError(playerUUID, "openKitPreview (kit null)"); return; }
         Inventory gui = createKitPreviewInventory(player, kitToPreview);
 
-        pushGuiHistory(playerUUID, GuiIdentifier.KIT_PREVIEW, createContext("kitNumber", kitToPreview.getKitNumber(), "owner", kitToPreview.getOwner())); // Uses external enum
+        pushGuiHistory(playerUUID, GuiIdentifier.KIT_PREVIEW, createContext("kitNumber", kitToPreview.getKitNumber(), "owner", kitToPreview.getOwner())); 
         player.openInventory(gui);
         msg.debug("Opened Kit Preview for kit " + kitToPreview.getKitNumber() + " (Owner: " + kitToPreview.getOwner() + ") for " + player.getName());
     }
@@ -273,7 +273,7 @@ public class GuiManager implements InventoryHolder {
          if (mainKit == null || mainKit.getEnderChestContents() == null) { msg.sendMessage(player, "error"); handleNavigationError(playerUUID, "openEnderChestPreview (kit null or no echest)"); return; }
          Inventory gui = createEnderChestPreviewInventory(player, mainKit);
 
-         pushGuiHistory(playerUUID, GuiIdentifier.ENDERCHEST_PREVIEW, createContext("kitNumber", mainKit.getKitNumber(), "owner", mainKit.getOwner())); // Uses external enum
+         pushGuiHistory(playerUUID, GuiIdentifier.ENDERCHEST_PREVIEW, createContext("kitNumber", mainKit.getKitNumber(), "owner", mainKit.getOwner())); 
          player.openInventory(gui);
          msg.debug("Opened Ender Chest Preview for kit " + mainKit.getKitNumber() + " for " + player.getName());
      }
@@ -283,15 +283,15 @@ public class GuiManager implements InventoryHolder {
          Inventory gui = createKitroomMainMenuInventory(player);
 
          GuiState currentState = peekGuiHistory(playerUUID);
-         // Prevent pushing duplicate Kitroom Main state if already there
-         if (currentState == null || currentState.identifier() != GuiIdentifier.KITROOM_MAIN) { // Uses external enum
-              // Clear history before opening Kitroom Main if coming from somewhere else
+         
+         if (currentState == null || currentState.identifier() != GuiIdentifier.KITROOM_MAIN) { 
+              
               clearGuiHistory(playerUUID);
-              pushGuiHistory(playerUUID, GuiIdentifier.KITROOM_MAIN, Collections.emptyMap()); // Uses external enum
+              pushGuiHistory(playerUUID, GuiIdentifier.KITROOM_MAIN, Collections.emptyMap()); 
          } else {
               msg.debug("Already at Kitroom Main, not pushing history again.");
          }
-         editingKitroomCategory.remove(playerUUID); // Ensure category editing state is cleared
+         editingKitroomCategory.remove(playerUUID); 
          player.openInventory(gui);
          msg.debug("Opened Kitroom Main Menu for " + player.getName());
      }
@@ -301,24 +301,24 @@ public class GuiManager implements InventoryHolder {
          Inventory gui = createKitroomCategoryInventory(player, categoryName);
 
          editingKitroomCategory.put(playerUUID, categoryName);
-         pushGuiHistory(playerUUID, GuiIdentifier.KITROOM_CATEGORY, createContext("category", categoryName)); // Uses external enum
+         pushGuiHistory(playerUUID, GuiIdentifier.KITROOM_CATEGORY, createContext("category", categoryName)); 
          player.openInventory(gui);
          msg.debug("Opened Kitroom category '" + categoryName + "' for player: " + player.getName());
      }
 
-    // --- Inventory Creation Helpers ---
+    
 
-    // Add new creation method for the Kit Choice GUI
+    
     public Inventory createPersonalKitChoiceInventory(Player player, Component title, List<Kit> availableKits) {
         int numKits = availableKits.size();
-        // Calculate size: rows needed for kits + 1 row for cancel/filler
+        
         int rowsForKits = (int) Math.ceil((double) numKits / 9.0);
-        int totalRows = Math.max(2, rowsForKits + 1); // Ensure at least 2 rows (1 for kits/filler, 1 for cancel)
-        int size = Math.min(54, totalRows * 9); // Ensure size is multiple of 9, max 54
+        int totalRows = Math.max(2, rowsForKits + 1); 
+        int size = Math.min(54, totalRows * 9); 
 
-        // Use the provided title, or fallback to gui.yml default if title is null/empty
+        
         Component finalTitle = title;
-        // TODO: Use MessageUtil for plain text serialization if needed, avoid direct serializer access if possible
+        
         String plainTitle = (finalTitle != null) ? plugin.getMessageUtil().getPlainTextSerializer().serialize(finalTitle).trim() : "";
         if (finalTitle == null || plainTitle.isEmpty()) {
              finalTitle = getGuiTitle("personal_kit_choice", "&8» &dChoose your Kit");
@@ -328,40 +328,40 @@ public class GuiManager implements InventoryHolder {
         ItemStack filler = loadGuiItem("items.personal_kit_choice.filler", Material.GRAY_STAINED_GLASS_PANE, "&r", null);
         int kitSlot = 0;
 
-        // Place Kit Items
+        
         for (Kit kit : availableKits) {
-             if (kitSlot >= size - 9) { // Stop if we run out of space before the last row
+             if (kitSlot >= size - 9) { 
                  plugin.getLogger().warning("Not enough space in Personal Kit Choice GUI to display all kits for " + player.getName());
                  break;
              }
 
-             // Load item appearance from gui.yml
+             
              ItemStack item = loadGuiItem("items.personal_kit_choice.kit_item", Material.CHEST, "&bKit {kit_number}",
                                           List.of("&7Click to select this kit."),
                                           Map.of("{kit_number}", String.valueOf(kit.getKitNumber())));
 
              ItemMeta meta = item.getItemMeta();
              if (meta != null) {
-                 // Add kit number PDC for identification on click
+                 
                  meta.getPersistentDataContainer().set(kitNumberKey, PersistentDataType.INTEGER, kit.getKitNumber());
                  item.setItemMeta(meta);
              }
              gui.setItem(kitSlot++, item);
         }
 
-        // Fill remaining kit area slots (before the last row)
+        
         for (int i = kitSlot; i < size - 9; i++) {
             gui.setItem(i, filler.clone());
         }
 
-        // Fill last row and place cancel button
-        int cancelSlot = getSlot("items.personal_kit_choice.cancel_button.slot", size - 5); // Default middle of last row
+        
+        int cancelSlot = getSlot("items.personal_kit_choice.cancel_button.slot", size - 5); 
         for (int i = size - 9; i < size; i++) {
             if (i == cancelSlot) {
                  ItemStack cancel = loadGuiItemWithAction("items.personal_kit_choice.cancel_button", "cancel_kit_choice", Material.BARRIER, "&cCancel", List.of("&7Close without selecting a kit."));
                  gui.setItem(i, cancel);
             } else {
-                // Only set filler if the slot is empty (might have been partially filled by kits if size is small)
+                
                 if (gui.getItem(i) == null) {
                     gui.setItem(i, filler.clone());
                 }
@@ -370,7 +370,7 @@ public class GuiManager implements InventoryHolder {
         return gui;
     }
 
-    // Other create... methods
+    
     private Inventory createMainMenuInventory(Player player, PlayerData playerData) {
          int size = 45;
          Component title = getGuiTitle("main_menu", "&8[&dT&5-&dKits&8] &f&lMain Menu");
@@ -405,16 +405,16 @@ public class GuiManager implements InventoryHolder {
                           Component privateLine = msg.deserialize(privateLineConfig);
                           boolean statusLineReplaced = false;
                           for (Component line : currentLore) {
-                              // TODO: Use MessageUtil for stripping colors
+                              
                               String plainLine = plugin.getMessageUtil().stripColors(line).trim();
-                              // Check for the specific placeholder text or the resolved text
+                              
                               if (plainLine.equalsIgnoreCase("Status:") || line.equals(globalLine) || line.equals(privateLine)) {
-                                  if (!statusLineReplaced) { // Only replace/add status once
+                                  if (!statusLineReplaced) { 
                                        finalLore.add(kit.isGlobal() ? globalLine : privateLine); statusLineReplaced = true;
                                   }
                               } else { finalLore.add(line); }
                           }
-                          if (!statusLineReplaced) { finalLore.add(0, kit.isGlobal() ? globalLine : privateLine); } // Add if not found/replaced
+                          if (!statusLineReplaced) { finalLore.add(0, kit.isGlobal() ? globalLine : privateLine); } 
                           meta.lore(finalLore);
                       }
                   }
@@ -440,7 +440,7 @@ public class GuiManager implements InventoryHolder {
             .replaceText(config -> config.matchLiteral("{kit_number}").replacement(String.valueOf(kitNumber)));
         Inventory gui = Bukkit.createInventory(this, 54, title);
 
-        // Apply items from the saved kit (Slots 0-40)
+        
         if (kit != null && kit.getContents() != null) {
             kit.getContents().getItems().forEach((slot, item) -> {
                 int editorSlot = KitManager.mapPlayerInvSlotToEditorSlot(slot);
@@ -450,7 +450,7 @@ public class GuiManager implements InventoryHolder {
             });
         }
 
-        // Fill button area (slots 45-53)
+        
         ItemStack bottomFiller = this.editorButtonAreaFillerInstance != null ? this.editorButtonAreaFillerInstance : loadGuiItem("items.kit_editor.button_area_filler", Material.GRAY_STAINED_GLASS_PANE, "&r", null);
         for (int i = 45; i < 54; i++) {
             if (gui.getItem(i) == null) {
@@ -458,7 +458,7 @@ public class GuiManager implements InventoryHolder {
             }
         }
 
-        // Add control buttons
+        
         ItemStack back = loadGuiItemWithAction("items.kit_editor.back_button", "back", Material.BARRIER, "&c◀ &fBack", List.of("&7Return to the main menu.", "&8(Saves kit if auto-save enabled)"));
         gui.setItem(getSlot("items.kit_editor.back_button.slot", 41), back);
         ItemStack loadInv = loadGuiItemWithAction("items.kit_editor.load_inventory_button", "load_current_inventory", Material.HOPPER_MINECART, "&b⬆ &aLoad Inventory", List.of("&7Copies your current inventory,", "&7armor, and offhand into the editor."));
@@ -539,7 +539,7 @@ public class GuiManager implements InventoryHolder {
     private Inventory createGlobalKitsListInventory(Player player, List<Kit> globalKits, int page) {
          if (globalKits.isEmpty()) return null;
 
-         int itemsPerPage = 36; // Slots 0-35 for items
+         int itemsPerPage = 36; 
          int totalPages = Math.max(1, (int) Math.ceil((double) globalKits.size() / itemsPerPage));
          final int finalPage = Math.max(1, Math.min(page, totalPages));
 
@@ -574,12 +574,12 @@ public class GuiManager implements InventoryHolder {
              }
              gui.setItem(currentSlot++, item);
          }
-         // Fill remaining item area slots
+         
          ItemStack itemAreaFiller = loadGuiItem("items.global_kits_list.item_area_filler", Material.LIGHT_GRAY_STAINED_GLASS_PANE, "&r", null);
          for (int i = currentSlot; i < itemsPerPage; i++) {
              if (gui.getItem(i) == null) gui.setItem(i, itemAreaFiller.clone());
          }
-         // Add buttons
+         
          ItemStack back = loadGuiItemWithAction("items.global_kits_list.back_button", "back", Material.BARRIER, "&c◀ &fBack", List.of("&7Return to the main menu."));
          gui.setItem(getSlot("items.global_kits_list.back_button.slot", 45), back);
          if (finalPage > 1) {
@@ -612,13 +612,13 @@ public class GuiManager implements InventoryHolder {
              });
          }
 
-         // Fill button area
+         
          ItemStack filler = loadGuiItem("items.kit_preview.filler", Material.BLACK_STAINED_GLASS_PANE, "&r", null);
-         for (int i = 45; i < 54; i++) { // Only fill button area slots 45-53
+         for (int i = 45; i < 54; i++) { 
              if (gui.getItem(i) == null) gui.setItem(i, filler.clone());
          }
 
-         // Add buttons
+         
          ItemStack back = loadGuiItemWithAction("items.kit_preview.back_button", "back", Material.BARRIER, "&c◀ &fBack", List.of("&7Return to Global Kits list."));
          gui.setItem(getSlot("items.kit_preview.back_button.slot", 49), back);
          if (kitToPreview.getEnderChestContents() != null && !kitToPreview.getEnderChestContents().getItems().isEmpty()) {
@@ -654,7 +654,7 @@ public class GuiManager implements InventoryHolder {
          Set<Integer> usedSlots = new HashSet<>();
          msg.debug("[KitroomMain] Initializing GUI (Size: " + size + ")");
 
-         // Apply Filler
+         
          ItemStack filler = loadGuiItem("items.kitroom_main.filler", Material.GRAY_STAINED_GLASS_PANE, "&r", null);
          if (filler != null) {
              for (int i = 0; i < 9; i++) { gui.setItem(i, filler.clone()); usedSlots.add(i); }
@@ -662,14 +662,14 @@ public class GuiManager implements InventoryHolder {
          }
          msg.debug("[KitroomMain] Applied filler. Used slots: " + usedSlots);
 
-         // Place Back Button
+         
          ItemStack backButton = loadGuiItemWithAction("items.kitroom_main.back_button", "back", Material.BARRIER, "&c◀ &fBack", List.of("&7Return to Main Menu."));
          int backButtonSlot = getSlot("items.kitroom_main.back_button.slot", 40);
          gui.setItem(backButtonSlot, backButton);
          usedSlots.add(backButtonSlot);
          msg.debug("[KitroomMain] Placed back button at slot " + backButtonSlot + ". Used slots: " + usedSlots);
 
-         // Process Categories
+         
          List<String> categoryNames = kitroomManager.getCategoryNames();
          List<String> categoriesToPlaceDynamically = new ArrayList<>();
          msg.debug("[KitroomMain] Processing categories: " + categoryNames);
@@ -701,9 +701,9 @@ public class GuiManager implements InventoryHolder {
              }
          }
 
-         // Place Dynamic Categories
-         int dynamicSlot = 9; // Start from slot 9
-         final int maxDynamicSlot = 35; // End at slot 35
+         
+         int dynamicSlot = 9; 
+         final int maxDynamicSlot = 35; 
          msg.debug("[KitroomMain] Placing dynamic categories: " + categoriesToPlaceDynamically + ". Starting search at slot " + dynamicSlot);
 
          for (String categoryName : categoriesToPlaceDynamically) {
@@ -734,7 +734,7 @@ public class GuiManager implements InventoryHolder {
             .replaceText(config -> config.matchLiteral("{category}").replacement(capitalize(categoryName)));
         Inventory gui = Bukkit.createInventory(this, size, title);
 
-        // Place Actual Items (Slots 0-44)
+        
         msg.debug("[KitroomCategory] Populating GUI for category '" + categoryName + "' with " + items.size() + " items.");
         for (Map.Entry<Integer, ItemStack> entry : items.entrySet()) {
             int slot = entry.getKey();
@@ -753,18 +753,18 @@ public class GuiManager implements InventoryHolder {
                     }
                 }
                 gui.setItem(slot, itemClone);
-                // msg.debug("[KitroomCategory] -> Placed item " + itemClone.getType() + " in slot " + slot);
+                
             } else {
                 msg.logWarning("Kitroom item found outside valid slot range (0-44) for category '" + categoryName + "', slot: " + slot + ". Item: " + originalItem.getType());
             }
         }
 
-        // Place Control Buttons (Slots 45-53)
+        
         int backButtonSlot = getSlot("items.kitroom_category.back_button.slot", 49);
         if (backButtonSlot >= 45 && backButtonSlot < size) {
             ItemStack backButton = loadGuiItemWithAction("items.kitroom_category.back_button", "back", Material.BARRIER, "&c◀ &fBack", List.of("&7Return to Category Selection."));
             gui.setItem(backButtonSlot, backButton);
-            // msg.debug("[KitroomCategory] Placed Back button in slot " + backButtonSlot);
+            
         } else {
             msg.logWarning("Configured slot " + backButtonSlot + " for kitroom_category.back_button is outside the button row (45-53).");
         }
@@ -776,21 +776,21 @@ public class GuiManager implements InventoryHolder {
                 ItemStack saveButton = loadGuiItemWithAction("items.kitroom_category.save_button", "save_kitroom_category", Material.WRITABLE_BOOK, "&a💾 &fSave Category", List.of("&7Save changes to this category"));
                 setItemActionAndCategory(saveButton, "save_kitroom_category", categoryName);
                 gui.setItem(saveButtonSlot, saveButton);
-                // msg.debug("[KitroomCategory] Placed Save button (Admin) in slot " + saveButtonSlot);
+                
             } else {
                 msg.logWarning("Configured slot " + saveButtonSlot + " for kitroom_category.save_button is outside the button row (45-53).");
                 saveButtonSlot = -1;
             }
         }
 
-        // Fill *remaining empty* slots in BOTTOM ROW ONLY (45-53)
-        ItemStack bottomRowFiller = GuiUtils.createGuiItem(Material.BLACK_STAINED_GLASS_PANE, Component.empty(), null, 0); // Simple filler
+        
+        ItemStack bottomRowFiller = GuiUtils.createGuiItem(Material.BLACK_STAINED_GLASS_PANE, Component.empty(), null, 0); 
         for (int i = 45; i < size; i++) {
             if (gui.getItem(i) == null) {
                 gui.setItem(i, bottomRowFiller.clone());
             }
         }
-        // msg.debug("[KitroomCategory] Filled empty slots in bottom row (45-53) with BLACK_STAINED_GLASS_PANE.");
+        
 
         return gui;
     }
@@ -798,7 +798,7 @@ public class GuiManager implements InventoryHolder {
     @Override
     public Inventory getInventory() { return null; }
 
-    // --- Anvil GUI ---
+    
     public void openImportAnvil(Player player, int targetKitNumber) {
         UUID playerUUID = player.getUniqueId();
         Component title = msg.deserialize("&b&lImport Kit");
@@ -816,7 +816,7 @@ public class GuiManager implements InventoryHolder {
                 String code = stateSnapshot.getText().trim();
                 Player p = stateSnapshot.getPlayer();
                 GuiState parentState = peekGuiHistory(p.getUniqueId());
-                if (parentState == null || parentState.identifier() != GuiIdentifier.KIT_EDITOR) { // Uses external enum
+                if (parentState == null || parentState.identifier() != GuiIdentifier.KIT_EDITOR) { 
                      msg.logWarning("Anvil import action aborted for " + p.getName() + ": No valid parent Kit Editor state found.");
                      msg.sendMessage(p, "error");
                      return List.of(AnvilGUI.ResponseAction.close());
@@ -836,7 +836,7 @@ public class GuiManager implements InventoryHolder {
                     Kit importedKit = shareCodeManager.redeemShareCode(upperCode);
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
                         GuiState currentState = peekGuiHistory(p.getUniqueId());
-                        if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_EDITOR || (int) currentState.context().getOrDefault("kitNumber", -1) != targetKitNumber) { // Uses external enum
+                        if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_EDITOR || (int) currentState.context().getOrDefault("kitNumber", -1) != targetKitNumber) { 
                              msg.logWarning("Anvil import processing aborted (callback) for " + p.getName() + ": Player state changed during async operation.");
                              msg.sendMessage(p, "error");
                              return;
@@ -889,12 +889,12 @@ public class GuiManager implements InventoryHolder {
             .open(player);
     }
 
-    // --- Central Button Action Handler ---
+    
     public void handleButtonAction( Player player, String action, PersistentDataContainer pdc, ClickType clickType, int clickedSlot ) {
         UUID playerUUID = player.getUniqueId();
         markGuiClosedByNavigation(playerUUID);
 
-        // Extract data from PDC
+        
         Integer kitNumFromPDC = pdc.getOrDefault(kitNumberKey, PersistentDataType.INTEGER, -1);
         UUID ownerUUIDFromPDC = null;
         String ownerStr = pdc.get(kitOwnerKey, PersistentDataType.STRING);
@@ -902,7 +902,7 @@ public class GuiManager implements InventoryHolder {
         String categoryFromPDC = pdc.get(categoryKey, PersistentDataType.STRING);
         Integer pageFromPDC = pdc.getOrDefault(pageKey, PersistentDataType.INTEGER, 1);
 
-        // Get context from current GUI state
+        
         GuiState currentState = peekGuiHistory(playerUUID);
         int currentKitNumCtx = -1;
         String currentCategoryCtx = null;
@@ -919,7 +919,7 @@ public class GuiManager implements InventoryHolder {
                 handleNavigationBack(playerUUID); return;
             }
 
-            // --- Action Switch ---
+            
             switch (action.toLowerCase()) {
                 case "edit_kit":
                     if (kitNumFromPDC > 0) {
@@ -952,7 +952,7 @@ public class GuiManager implements InventoryHolder {
                     handlePreviewKit(player, ownerUUIDFromPDC, kitNumFromPDC);
                     break;
                 case "preview_echest":
-                     if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_PREVIEW) { handleInvalidState(player, action, "Invalid parent state for preview_echest"); break; } // Uses external enum
+                     if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_PREVIEW) { handleInvalidState(player, action, "Invalid parent state for preview_echest"); break; } 
                      int previewKitNum = (int) currentState.context().getOrDefault("kitNumber", -1);
                      UUID previewOwner = (UUID) currentState.context().get("owner");
                      if(previewKitNum <= 0 || previewOwner == null) { handleInvalidState(player, action, "Missing context in parent state for preview_echest"); break; }
@@ -1002,12 +1002,12 @@ public class GuiManager implements InventoryHolder {
                     handleSaveKitroomCategory(player, categoryFromPDC);
                     break;
 
-                // --- NEW Case ---
+                
                  case "cancel_kit_choice":
                      msg.debug("[Kit Choice] Cancelled by Button");
-                     cancelPendingKitChoice(playerUUID, Optional.empty()); // Complete future
-                     player.closeInventory(); // Close the GUI
-                     // History is managed by handleGuiClose now
+                     cancelPendingKitChoice(playerUUID, Optional.empty()); 
+                     player.closeInventory(); 
+                     
                      break;
 
                 default:
@@ -1021,8 +1021,8 @@ public class GuiManager implements InventoryHolder {
         } catch (Exception e) {
             plugin.getMessageUtil().logException("Error handling button action '" + action + "' for player " + player.getName(), e);
             msg.sendMessage(player, "error");
-            // Attempt to cancel pending future on error during button handling, if applicable
-            if (currentState != null && currentState.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE) { // Uses external enum
+            
+            if (currentState != null && currentState.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE) { 
                  cancelPendingKitChoice(playerUUID, Optional.empty());
             }
             resetGuiCloseMarker(playerUUID);
@@ -1031,13 +1031,13 @@ public class GuiManager implements InventoryHolder {
         }
     }
 
-    // --- Navigation & State Helpers ---
+    
     private void handleNavigationBack(UUID playerUUID) {
         msg.debug("[NAV] handleNavigationBack called for " + playerUUID);
         Player player = Bukkit.getPlayer(playerUUID);
         if (player == null || !player.isOnline()) { msg.debug("[NAV] Player offline, aborting back nav."); clearGuiHistory(playerUUID); return; }
 
-        GuiState currentState = popGuiHistory(playerUUID); // Remove current from stack
+        GuiState currentState = popGuiHistory(playerUUID); 
         if (currentState == null) {
             msg.debug("[NAV] History stack empty, cannot go back. Closing.");
             player.closeInventory();
@@ -1045,13 +1045,13 @@ public class GuiManager implements InventoryHolder {
         }
         msg.debug("[NAV] Popped state: " + currentState.identifier());
 
-        // If we were in a kit choice GUI and went back, ensure the future is cancelled
-        if (currentState.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE) { // Uses external enum
+        
+        if (currentState.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE) { 
             cancelPendingKitChoice(playerUUID, Optional.empty());
             msg.debug("[NAV] Cancelled pending kit choice due to 'back' action.");
         }
 
-        GuiState parentState = peekGuiHistory(playerUUID); // Look at the new top
+        GuiState parentState = peekGuiHistory(playerUUID); 
         markGuiClosedByNavigation(playerUUID);
 
         if (parentState != null) {
@@ -1074,8 +1074,8 @@ public class GuiManager implements InventoryHolder {
              }, 1L);
          } else {
              msg.debug("[NAV] No parent found in history, closing GUI naturally.");
-             player.closeInventory(); // Close GUI
-             // clearGuiHistory(playerUUID); // History already empty or cleared if needed
+             player.closeInventory(); 
+             
          }
     }
 
@@ -1087,16 +1087,16 @@ public class GuiManager implements InventoryHolder {
         int page = (int) context.getOrDefault("page", 1);
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
 
-        // Added check for player data needed by PERSONAL_KIT_CHOICE as well
-        if (playerData == null && (state.identifier() == GuiIdentifier.MAIN_MENU || // Uses external enum
+        
+        if (playerData == null && (state.identifier() == GuiIdentifier.MAIN_MENU || 
                                     state.identifier() == GuiIdentifier.KIT_EDITOR ||
                                     state.identifier() == GuiIdentifier.ENDERCHEST_EDITOR ||
-                                    state.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE)) { // Add check here
+                                    state.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE)) { 
             msg.logWarning("Player data null when trying to get inventory for state: " + state.identifier());
             return null;
         }
 
-        switch (state.identifier()) { // Uses external enum
+        switch (state.identifier()) { 
             case MAIN_MENU:          return createMainMenuInventory(player, playerData);
             case KIT_EDITOR:
                  if(kitNumber <= 0) { msg.logWarning("Invalid kit number in context for KIT_EDITOR: " + kitNumber); return null; }
@@ -1123,11 +1123,11 @@ public class GuiManager implements InventoryHolder {
                  return null;
             case PERSONAL_KIT_CHOICE:
                  msg.logWarning("Attempted to getInventoryForState for PERSONAL_KIT_CHOICE GUI.");
-                 // Should not typically navigate *back* to this state via normal means.
-                 // If needed, recreate using context (though title might be lost).
-                 // Component defaultTitle = getGuiTitle("personal_kit_choice", "&8» &dChoose your Kit");
-                 // List<Kit> kits = (playerData != null) ? new ArrayList<>(playerData.getKits().values()) : Collections.emptyList();
-                 // return createPersonalKitChoiceInventory(player, defaultTitle, kits);
+                 
+                 
+                 
+                 
+                 
                  return null;
             default:
                 msg.logSevere("Unknown GuiIdentifier in getInventoryForState: " + state.identifier());
@@ -1137,9 +1137,9 @@ public class GuiManager implements InventoryHolder {
 
     private void handleNavigationError(UUID playerUUID, String contextMessage) {
         msg.logWarning("[NAV] Handling navigation error for " + playerUUID + ". Context: " + contextMessage);
-        // Ensure pending choice is cancelled on error
+        
         cancelPendingKitChoice(playerUUID, Optional.empty());
-        clearGuiHistory(playerUUID); // Clear history on error
+        clearGuiHistory(playerUUID); 
         Player player = Bukkit.getPlayer(playerUUID);
         if(player != null && player.isOnline()) {
              msg.sendMessage(player, "error");
@@ -1158,21 +1158,21 @@ public class GuiManager implements InventoryHolder {
          msg.debug("Action '" + attemptedAction + "' failed due to invalid state. Reason: " + reason);
          msg.sendMessage(player, "gui_action_expired");
          msg.playSound(player, "error");
-         // Check if we were in a kit choice state and cancel the future
+         
          GuiState currentState = peekGuiHistory(player.getUniqueId());
-         if (currentState != null && currentState.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE) { // Uses external enum
+         if (currentState != null && currentState.identifier() == GuiIdentifier.PERSONAL_KIT_CHOICE) { 
              cancelPendingKitChoice(player.getUniqueId(), Optional.empty());
          }
          resetGuiCloseMarker(player.getUniqueId());
-         handleNavigationBack(player.getUniqueId()); // Try to go back gracefully
+         handleNavigationBack(player.getUniqueId()); 
     }
 
-    // --- NEW: Methods for managing pending kit choices ---
+    
     public void registerPendingKitChoice(UUID playerUUID, CompletableFuture<Optional<Kit>> future) {
         CompletableFuture<Optional<Kit>> previous = pendingKitChoices.put(playerUUID, future);
         if (previous != null && !previous.isDone()) {
             msg.logWarning("Player " + playerUUID + " already had a pending kit choice. Cancelling previous.");
-            previous.complete(Optional.empty()); // Cancel the old one
+            previous.complete(Optional.empty()); 
         }
         msg.debug("[Kit Choice] Registered pending choice for " + playerUUID);
     }
@@ -1183,47 +1183,47 @@ public class GuiManager implements InventoryHolder {
             future.complete(result);
             msg.debug("[Kit Choice] Completed/Cancelled pending choice for " + playerUUID + " with result: " + result.isPresent());
         } else if (future != null) {
-             // Future existed but was already completed (e.g., button click then immediate ESC close)
+             
              msg.debug("[Kit Choice] Attempted to cancel choice for " + playerUUID + ", but future was already done.");
         }
     }
 
-    // --- GUI Close Handling ---
+    
     public void handleGuiClose(Player player, Inventory closedInventory) {
         UUID playerUUID = player.getUniqueId();
-        GuiIdentifier closedGuiType = identifyGuiFromHolder(closedInventory); // Uses external enum
+        GuiIdentifier closedGuiType = identifyGuiFromHolder(closedInventory); 
 
         boolean wasNavigationClose = wasGuiClosedByButton.getOrDefault(playerUUID, false);
-        resetGuiCloseMarker(playerUUID); // Always reset marker after checking
+        resetGuiCloseMarker(playerUUID); 
 
         msg.debug(String.format("[GUI CLOSE] START for %s. Closed GUI Type: %s, NavigationClose: %b",
                 player.getName(), closedGuiType, wasNavigationClose)
         );
 
-        // Handle specific cleanup based on closed GUI type FIRST
-        if (closedGuiType == GuiIdentifier.KITROOM_CATEGORY) { // Uses external enum
+        
+        if (closedGuiType == GuiIdentifier.KITROOM_CATEGORY) { 
              editingKitroomCategory.remove(playerUUID);
              msg.debug("[GUI CLOSE] Cleared kitroom category editing state.");
-        } else if (closedGuiType == GuiIdentifier.PERSONAL_KIT_CHOICE) { // Uses external enum
-             // If closed by any means other than selecting a kit via click (handled in listener)
-             // or cancelling via button (handled in button action), cancel the future.
-             // This check ensures the future isn't completed twice.
+        } else if (closedGuiType == GuiIdentifier.PERSONAL_KIT_CHOICE) { 
+             
+             
+             
              if (pendingKitChoices.containsKey(playerUUID)) {
                  cancelPendingKitChoice(playerUUID, Optional.empty());
                  msg.debug("[GUI CLOSE] Cancelled pending kit choice due to close/back out.");
              }
         }
 
-        // Then handle general logic (auto-save, history clear)
+        
         if (wasNavigationClose) {
             msg.debug("[GUI CLOSE] Closed by button/back action, navigation handled elsewhere.");
-            // No auto-save needed on navigation close
+            
         } else {
-            // Manual Close (ESC, death, etc.)
+            
             msg.debug("[GUI CLOSE] Manual close detected (ESC/Other?).");
 
-            // Auto-save for Kit Editor
-            if (closedGuiType == GuiIdentifier.KIT_EDITOR && configManager.isSaveOnEditorClose()) { // Uses external enum
+            
+            if (closedGuiType == GuiIdentifier.KIT_EDITOR && configManager.isSaveOnEditorClose()) { 
                  int kitNumFromTitle = getKitNumberFromTitle(closedInventory);
                  if (kitNumFromTitle > 0) {
                      msg.debug("[GUI CLOSE] Auto-saving Kit " + kitNumFromTitle + " due to manual close.");
@@ -1233,8 +1233,8 @@ public class GuiManager implements InventoryHolder {
                  }
             }
 
-            // Clear history entirely on manual close
-            clearGuiHistory(playerUUID); // This also cancels pending choice if needed
+            
+            clearGuiHistory(playerUUID); 
             msg.debug("[GUI CLOSE] Cleared GUI history due to manual close.");
         }
 
@@ -1246,16 +1246,16 @@ public class GuiManager implements InventoryHolder {
         try {
             if (!(inv.getHolder() instanceof GuiManager)) return -1;
             List<HumanEntity> viewers = inv.getViewers();
-            // Title might not be available if called too late after close
+            
             InventoryView view = viewers.isEmpty() ? null : viewers.get(0).getOpenInventory();
             Component titleComp = (view != null) ? view.title() : null;
 
             if (titleComp == null) {
-                 // Fallback: Try peeking at history if title unavailable
+                 
                  UUID viewerUUID = viewers.isEmpty() ? null : viewers.get(0).getUniqueId();
                  if (viewerUUID != null) {
                       GuiState lastState = peekGuiHistory(viewerUUID);
-                      // Uses external enum
+                      
                       if (lastState != null && (lastState.identifier() == GuiIdentifier.KIT_EDITOR || lastState.identifier() == GuiIdentifier.ENDERCHEST_EDITOR)) {
                            msg.debug("getKitNumberFromTitle: Using history context as fallback.");
                            return (int) lastState.context().getOrDefault("kitNumber", -1);
@@ -1265,11 +1265,11 @@ public class GuiManager implements InventoryHolder {
                  return -1;
             }
 
-            // TODO: Use MessageUtil for stripping colors
+            
             String title = plugin.getMessageUtil().stripColors(titleComp).trim();
             msg.debug("getKitNumberFromTitle: Stripped Title = '" + title + "'");
 
-            // TODO: Use MessageUtil for stripping colors
+            
             String rawEditorTitleFormat = plugin.getMessageUtil().stripColors(getGuiTitle("kit_editor", ""));
             String rawEchestTitleFormat = plugin.getMessageUtil().stripColors(getGuiTitle("enderchest_editor", ""));
 
@@ -1286,9 +1286,9 @@ public class GuiManager implements InventoryHolder {
             }
 
             if (numPart != null && !numPart.isEmpty()) {
-                 String potentialNumber = numPart.trim().split("[^0-9]", 2)[0]; // Extract leading numbers
+                 String potentialNumber = numPart.trim().split("[^0-9]", 2)[0]; 
                  msg.debug("getKitNumberFromTitle: Extracted potential number part = '" + potentialNumber + "'");
-                 // Ensure the extracted part is not empty before parsing
+                 
                  if (!potentialNumber.isEmpty()) {
                     return Integer.parseInt(potentialNumber);
                  } else {
@@ -1304,18 +1304,18 @@ public class GuiManager implements InventoryHolder {
         return -1;
     }
 
-    // identifyGuiFromHolder - Now uses the external GuiIdentifier enum
+    
     public GuiIdentifier identifyGuiFromHolder(Inventory inventory) {
         try {
             if (inventory == null || !(inventory.getHolder() instanceof GuiManager)) return null;
             Component actualTitleComponent = null;
             try {
                  List<HumanEntity> viewers = inventory.getViewers();
-                 // Use title from view if available, more reliable during close event
+                 
                  actualTitleComponent = viewers.isEmpty() ? null : viewers.get(0).getOpenInventory().title();
             } catch (Exception e) { msg.debug("identifyGuiFromHolder: Could not get title from viewers: " + e.getMessage()); }
 
-            // Fallback to trying history if title is null (e.g., called very late after close)
+            
             if (actualTitleComponent == null && !inventory.getViewers().isEmpty()) {
                  UUID viewerUUID = inventory.getViewers().get(0).getUniqueId();
                  GuiState lastState = peekGuiHistory(viewerUUID);
@@ -1326,12 +1326,12 @@ public class GuiManager implements InventoryHolder {
             }
 
             if (actualTitleComponent == null) { msg.debug("identifyGuiFromHolder: Title component was null and no history fallback."); return null; }
-            // TODO: Use MessageUtil for stripping colors
+            
             String actualTitleStripped = plugin.getMessageUtil().stripColors(actualTitleComponent).trim();
 
-            // Compare against stripped base titles (excluding placeholders)
-            // Check potentially ambiguous titles first or more specific ones
-            // TODO: Use MessageUtil for stripping colors
+            
+            
+            
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("personal_kit_choice", "")).trim())) return GuiIdentifier.PERSONAL_KIT_CHOICE;
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kit_editor", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.KIT_EDITOR;
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("enderchest_editor", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.ENDERCHEST_EDITOR;
@@ -1339,7 +1339,7 @@ public class GuiManager implements InventoryHolder {
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kit_preview", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.KIT_PREVIEW;
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("echest_preview", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.ENDERCHEST_PREVIEW;
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kitroom_category", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.KITROOM_CATEGORY;
-             // Check less specific titles later
+             
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kitroom_main", "")).trim())) return GuiIdentifier.KITROOM_MAIN;
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("confirmation", "")).trim())) return GuiIdentifier.CONFIRMATION;
              if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("main_menu", "")).trim())) return GuiIdentifier.MAIN_MENU;
@@ -1353,7 +1353,7 @@ public class GuiManager implements InventoryHolder {
         }
     }
 
-    // createKitFromEditor
+    
     Kit createKitFromEditor(Player player, int kitNumber, Inventory editorInventory) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
         KitContents contents = new KitContents();
@@ -1395,10 +1395,10 @@ public class GuiManager implements InventoryHolder {
         return Kit.builder().kitNumber(kitNumber).owner(player.getUniqueId()).name("Kit " + kitNumber).contents(contents).enderChestContents(existingEchest).global(isCurrentlyGlobal).build();
     }
 
-    // --- Helper Method Implementations ---
+    
     private void loadCurrentInventoryToEditor(Player player) {
         GuiState currentState = peekGuiHistory(player.getUniqueId());
-        if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_EDITOR) { // Uses external enum
+        if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_EDITOR) { 
              handleInvalidState(player, "load_current_inventory", "Not in Kit Editor state"); return;
         }
         PlayerInventory pInv = player.getInventory();
@@ -1442,7 +1442,7 @@ public class GuiManager implements InventoryHolder {
 
     private void handleRepairKitClick(Player player, int kitNum) {
          GuiState currentState = peekGuiHistory(player.getUniqueId());
-         // Uses external enum
+         
          if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_EDITOR || (int)currentState.context().getOrDefault("kitNumber", -1) != kitNum) {
              handleInvalidState(player, "repair_kit_items", "Mismatched kit number context"); return;
          }
@@ -1463,7 +1463,7 @@ public class GuiManager implements InventoryHolder {
 
     private void handleShareKit(Player player, int kitNum) {
          GuiState currentState = peekGuiHistory(player.getUniqueId());
-         // Uses external enum
+         
          if (currentState == null || currentState.identifier() != GuiIdentifier.KIT_EDITOR || (int)currentState.context().getOrDefault("kitNumber", -1) != kitNum) {
               handleInvalidState(player, "share_kit", "Mismatched kit number context"); return;
          }
@@ -1506,7 +1506,7 @@ public class GuiManager implements InventoryHolder {
              .thenAcceptAsync(v -> {
                   if (player.isOnline()) {
                       GuiState currentState = peekGuiHistory(playerUUID);
-                      // Uses external enum
+                      
                       if (currentState != null && currentState.identifier() == GuiIdentifier.KIT_EDITOR && (int)currentState.context().getOrDefault("kitNumber", -1) == kitNum) {
                            msg.debug("Refreshing Kit Editor after global status change for kit " + kitNum);
                            openKitEditor(player, kitNum);
@@ -1545,7 +1545,7 @@ public class GuiManager implements InventoryHolder {
        UUID playerUUID = player.getUniqueId();
        GuiState currentState = peekGuiHistory(playerUUID);
        String currentCategoryCtx = null;
-       // Uses external enum
+       
        if (currentState != null && currentState.identifier() == GuiIdentifier.KITROOM_CATEGORY) {
            currentCategoryCtx = (String) currentState.context().get("category");
        }
@@ -1560,28 +1560,28 @@ public class GuiManager implements InventoryHolder {
        for (int slot = 0; slot < 45; slot++) {
            ItemStack item = inv.getItem(slot);
            if (item != null && item.getType() != Material.AIR && !isKitroomFiller(item)) {
-                // msg.debug("handleSaveKitroomCategory: Saving item " + item.getType() + " from slot " + slot);
+                
                 newItems.put(slot, item.clone());
            } else if (item != null && isKitroomFiller(item)) {
                msg.debug("handleSaveKitroomCategory: Skipping kitroom filler item in slot " + slot);
            }
        }
        kitroomManager.setCategoryItems(categoryToSave, newItems);
-       kitroomManager.saveKitroom(); // This now gets the internal reference and saves
+       kitroomManager.saveKitroom(); 
        msg.sendActionBar(player, "kitroom_category_saved", "category", capitalize(categoryToSave));
        msg.playSound(player, "kit_save");
-       handleNavigationBack(playerUUID); // Navigate back after saving
+       handleNavigationBack(playerUUID); 
    }
 
-    // --- Item Action Helpers ---
+    
     private void setItemAction(ItemStack item, String action) { if (item == null || action == null || action.isEmpty()) return; ItemMeta meta = item.getItemMeta(); if (meta != null) { meta.getPersistentDataContainer().set(actionKey, PersistentDataType.STRING, action); item.setItemMeta(meta); } }
     private void setItemActionAndKitNum(ItemStack item, String action, int kitNum) { if (item == null || action == null || action.isEmpty()) return; ItemMeta meta = item.getItemMeta(); if (meta != null) { PersistentDataContainer pdc = meta.getPersistentDataContainer(); pdc.set(actionKey, PersistentDataType.STRING, action); pdc.set(kitNumberKey, PersistentDataType.INTEGER, kitNum); item.setItemMeta(meta); } else { msg.debug("setItemActionAndKitNum: Meta was null for item " + item.getType() + ". Cannot set action/kitNum."); } }
     private void setItemActionAndKitData(ItemStack item, String action, int kitNum, UUID ownerUUID) { if (item == null || action == null || action.isEmpty() || ownerUUID == null) return; ItemMeta meta = item.getItemMeta(); if (meta != null) { PersistentDataContainer pdc = meta.getPersistentDataContainer(); pdc.set(actionKey, PersistentDataType.STRING, action); pdc.set(kitNumberKey, PersistentDataType.INTEGER, kitNum); pdc.set(kitOwnerKey, PersistentDataType.STRING, ownerUUID.toString()); item.setItemMeta(meta); } }
     private void setItemActionAndCategory(ItemStack item, String action, String category) { if (item == null || action == null || action.isEmpty() || category == null || category.isEmpty()) { msg.debug("Attempted to set null/empty action or category"); return; } ItemMeta meta = item.getItemMeta(); if (meta != null) { PersistentDataContainer pdc = meta.getPersistentDataContainer(); pdc.set(actionKey, PersistentDataType.STRING, action); pdc.set(categoryKey, PersistentDataType.STRING, category); item.setItemMeta(meta); } else { msg.debug("setItemActionAndCategory: Meta was null for item " + item.getType()); } }
     private void setItemActionAndPage(ItemStack item, String action, int pageNum) { if (item == null || action == null || action.isEmpty()) return; ItemMeta meta = item.getItemMeta(); if (meta != null) { PersistentDataContainer pdc = meta.getPersistentDataContainer(); pdc.set(actionKey, PersistentDataType.STRING, action); pdc.set(pageKey, PersistentDataType.INTEGER, pageNum); item.setItemMeta(meta); } }
 
-    // --- GUI Identification Methods ---
-    // Now use the external GuiIdentifier enum
+    
+    
      public boolean isKitEditorInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.KIT_EDITOR); }
      public boolean isEnderChestEditorInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.ENDERCHEST_EDITOR); }
      public boolean isKitroomCategoryInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.KITROOM_CATEGORY); }
@@ -1591,14 +1591,14 @@ public class GuiManager implements InventoryHolder {
      public boolean isKitroomMainMenuInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.KITROOM_MAIN); }
      public boolean isConfirmationInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.CONFIRMATION); }
      public boolean isMainMenuInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.MAIN_MENU); }
-     public boolean isPersonalKitChoiceInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.PERSONAL_KIT_CHOICE); } // Added
+     public boolean isPersonalKitChoiceInventory(Inventory inv) { return isGuiInventory(inv, GuiIdentifier.PERSONAL_KIT_CHOICE); } 
 
      private boolean isGuiInventory(Inventory inv, GuiIdentifier expectedType) {
          GuiIdentifier actualType = identifyGuiFromHolder(inv);
          return actualType == expectedType;
      }
 
-    // --- Utility Methods ---
+    
     public String capitalize(String str) { if (str == null || str.isEmpty()) return str; return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase(); }
 
     private void saveKitFromInventory(Player player, int kitNumber, Inventory sourceInventory) {
@@ -1607,7 +1607,7 @@ public class GuiManager implements InventoryHolder {
         try {
              Kit kitSnapshot = createKitFromEditor(player, kitNumber, sourceInventory);
              if (kitSnapshot != null) {
-                  // Pass the sourceInventory which holds the state just before close
+                  
                   kitManager.saveKit(player, kitNumber, sourceInventory);
                  msg.debug("Auto-save triggered and completed for kit " + kitNumber);
              } else { msg.debug("Auto-save aborted for kit " + kitNumber + ": createKitFromEditor returned null (validation failed)."); }
@@ -1639,15 +1639,15 @@ public class GuiManager implements InventoryHolder {
         }
     }
 
-    // --- GUI Config Loading Helpers ---
+    
     private Component getGuiTitle(String key, String defaultValue) {
         String titleStr = guiConfig.getString("titles." + key);
         if (titleStr == null || titleStr.isEmpty()) {
              plugin.getLogger().warning("Missing title definition in gui.yml for key: titles." + key + ". Using default: " + defaultValue);
              titleStr = defaultValue;
-             // Handle default title for the new GUI specifically if needed
-             if (key.equals("personal_kit_choice") && (defaultValue == null || defaultValue.isEmpty())) { // Added null check for safety
-                 titleStr = "&8» &dChoose your Kit"; // Default if even defaultValue is empty
+             
+             if (key.equals("personal_kit_choice") && (defaultValue == null || defaultValue.isEmpty())) { 
+                 titleStr = "&8» &dChoose your Kit"; 
              }
         }
         return msg.deserialize(titleStr);
@@ -1709,4 +1709,4 @@ public class GuiManager implements InventoryHolder {
         if (metaChanged) item.setItemMeta(meta);
     }
 
-} // End of GuiManager class
+} 

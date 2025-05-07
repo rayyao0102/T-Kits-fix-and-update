@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 public class PlayerDataManager {
 
     private final TKits plugin;
-    private final Map<UUID, PlayerData> playerDataMap; // Online player data cache
-    private final Set<UUID> loadingPlayers; // Track players currently being loaded to prevent duplicate loads
+    private final Map<UUID, PlayerData> playerDataMap; 
+    private final Set<UUID> loadingPlayers; 
 
     public PlayerDataManager(TKits plugin) {
         this.plugin = plugin;
         this.playerDataMap = new ConcurrentHashMap<>();
-        this.loadingPlayers = ConcurrentHashMap.newKeySet(); // Thread-safe set
+        this.loadingPlayers = ConcurrentHashMap.newKeySet(); 
     }
 
     /**
@@ -34,36 +34,36 @@ public class PlayerDataManager {
         if (playerDataMap.containsKey(playerUUID)) {
             return CompletableFuture.completedFuture(playerDataMap.get(playerUUID));
         }
-        // Prevent duplicate loading tasks
+        
         if (!loadingPlayers.add(playerUUID)) {
-            // Already loading, wait for existing task (risky without tracking the future, retry later?)
-             // Let's allow retrying by returning a failed future quickly if already loading,
-             // the join listener can retry maybe. Or just log.
+            
+             
+             
             plugin.getLogger().fine("Attempted to load data for player " + playerUUID + " while already loading.");
-            // Spin-wait or return existing future is complex, let's return a temp empty object for now, join handler may need retry
-             return CompletableFuture.completedFuture(new PlayerData(playerUUID)); // Return temporary empty data to avoid NPEs? Risky.
+            
+             return CompletableFuture.completedFuture(new PlayerData(playerUUID)); 
         }
 
         plugin.getLogger().fine("Loading data for player " + playerUUID + "...");
-        PlayerData data = new PlayerData(playerUUID); // Create base object
+        PlayerData data = new PlayerData(playerUUID); 
 
         return plugin.getStorageHandler().loadPlayerKits(playerUUID)
              .thenApplyAsync(loadedKits -> {
-                 loadedKits.forEach(data::setKit); // Use setter which performs checks
-                 playerDataMap.put(playerUUID, data); // Cache the fully loaded data
-                 loadingPlayers.remove(playerUUID); // Mark loading as complete
+                 loadedKits.forEach(data::setKit); 
+                 playerDataMap.put(playerUUID, data); 
+                 loadingPlayers.remove(playerUUID); 
                  plugin.getLogger().info("Successfully loaded data for player " + playerUUID + ". Found " + loadedKits.size() + " kits.");
                  return data;
-             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin)) // Ensure map modification happens safely
+             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin)) 
               .exceptionally(ex -> {
                  plugin.getMessageUtil().logException("Failed to load player data for " + playerUUID, ex);
-                  loadingPlayers.remove(playerUUID); // Ensure player is removed from loading set on failure
-                 // Don't cache potentially incomplete data on failure. Let subsequent accesses retry loading.
-                 // Return null or throw? Throwing here might break player join process.
-                 // Return the empty object for now, but subsequent calls will still hit storage.
-                 playerDataMap.put(playerUUID, data); // Cache the empty object on failure to prevent constant reload attempts? Check this behaviour.
+                  loadingPlayers.remove(playerUUID); 
+                 
+                 
+                 
+                 playerDataMap.put(playerUUID, data); 
                   plugin.getMessageUtil().logWarning("Returning empty PlayerData object for " + playerUUID + " due to loading error.");
-                 return data; // Return the base (potentially empty) object
+                 return data; 
              });
     }
 
@@ -75,11 +75,11 @@ public class PlayerDataManager {
      */
     public void unloadPlayerData(UUID playerUUID, boolean saveBeforeUnload) {
         PlayerData data = playerDataMap.remove(playerUUID);
-         loadingPlayers.remove(playerUUID); // Ensure removed from loading set if they quit while loading
+         loadingPlayers.remove(playerUUID); 
         if (data != null) {
             plugin.getLogger().fine("Unloaded data cache for player " + playerUUID);
-            if (saveBeforeUnload && !data.isSaving()) { // Check flag to avoid concurrent saves
-                 savePlayerData(data).exceptionally(ex -> { // Handle save exceptions
+            if (saveBeforeUnload && !data.isSaving()) { 
+                 savePlayerData(data).exceptionally(ex -> { 
                      plugin.getMessageUtil().logException("Error saving player data during unload for " + playerUUID, ex);
                      return null;
                  });
@@ -92,7 +92,7 @@ public class PlayerDataManager {
     }
 
     public PlayerData getPlayerData(UUID playerUUID) {
-        // Returns cached data. If null, could mean player is offline or data hasn't loaded yet.
+        
         return playerDataMap.get(playerUUID);
     }
 
@@ -107,7 +107,7 @@ public class PlayerDataManager {
      */
     public CompletableFuture<Void> savePlayerData(PlayerData data) {
         if (data == null || data.getKits().isEmpty()) {
-            return CompletableFuture.completedFuture(null); // Nothing to save
+            return CompletableFuture.completedFuture(null); 
         }
         if (data.isSaving()) {
             plugin.getLogger().warning("Save already in progress for player " + data.getPlayerUUID() + ". Skipping duplicate request.");
@@ -117,12 +117,12 @@ public class PlayerDataManager {
 
         plugin.getLogger().fine("Initiating async save for player " + data.getPlayerUUID() + "...");
         List<CompletableFuture<Void>> saveFutures = data.getKits().values().stream()
-                .map(kit -> savePlayerKit(data.getPlayerUUID(), kit)) // Use the method that handles exceptions
+                .map(kit -> savePlayerKit(data.getPlayerUUID(), kit)) 
                 .collect(Collectors.toList());
 
         return CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0]))
                .whenComplete((v, throwable) -> {
-                    data.setSaving(false); // Ensure flag is reset regardless of success/failure
+                    data.setSaving(false); 
                    if (throwable != null) {
                         plugin.getMessageUtil().logException("Error during batch save for player " + data.getPlayerUUID(), throwable);
                    } else {
@@ -141,7 +141,7 @@ public class PlayerDataManager {
          if (playerUUID == null || kit == null) {
              return CompletableFuture.failedFuture(new NullPointerException("PlayerUUID or Kit cannot be null for saving."));
          }
-         // Redundant check as setKit should prevent this, but belt-and-suspenders approach
+         
          if (!kit.getOwner().equals(playerUUID)) {
               plugin.getMessageUtil().logSevere("CRITICAL SAVE ERROR (savePlayerKit): Mismatched owner. Target: " + playerUUID + " Kit: " + kit);
              return CompletableFuture.failedFuture(new IllegalArgumentException("Kit owner mismatch during save attempt."));
@@ -150,9 +150,9 @@ public class PlayerDataManager {
          return plugin.getStorageHandler().savePlayerKit(playerUUID, kit)
                .exceptionally(ex -> {
                     plugin.getMessageUtil().logException("Failed to save kit " + kit.getKitNumber() + " for player " + playerUUID, ex);
-                    // Optionally notify player? Depends on context. Here, just log the error.
-                     // Re-throw maybe? No, just complete exceptionally for the caller.
-                    throw new RuntimeException("Storage error saving kit", ex); // Wrap for CF
+                    
+                     
+                    throw new RuntimeException("Storage error saving kit", ex); 
                });
     }
 
@@ -165,18 +165,18 @@ public class PlayerDataManager {
          plugin.getMessageUtil().logInfo("Saving data for " + playerDataMap.size() + " online players (blocking)...");
          long startTime = System.currentTimeMillis();
 
-         // Create futures but don't start saves yet if players have saving=true flag
+         
          List<CompletableFuture<Void>> saveFutures = new ArrayList<>();
          for (PlayerData data : playerDataMap.values()) {
-             if (!data.getKits().isEmpty() && !data.isSaving()) { // Only save if has data and not already saving
-                  data.setSaving(true); // Set flag before creating future
+             if (!data.getKits().isEmpty() && !data.isSaving()) { 
+                  data.setSaving(true); 
                  saveFutures.add(
                      CompletableFuture.allOf(
                          data.getKits().values().stream()
                              .map(kit -> plugin.getStorageHandler().savePlayerKit(data.getPlayerUUID(), kit))
                              .toArray(CompletableFuture[]::new)
-                     ).whenComplete((v, t) -> data.setSaving(false)) // Reset flag on completion
-                      .exceptionally(ex -> { // Log exceptions per player during batch save
+                     ).whenComplete((v, t) -> data.setSaving(false)) 
+                      .exceptionally(ex -> { 
                            plugin.getMessageUtil().logException("Error during blocking save for player " + data.getPlayerUUID(), ex);
                            return null;
                        })
@@ -186,9 +186,9 @@ public class PlayerDataManager {
              }
          }
 
-         // Wait for all initiated save operations to complete
+         
          try {
-             CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS); // Block with timeout
+             CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS); 
              long duration = System.currentTimeMillis() - startTime;
              plugin.getMessageUtil().logInfo("Finished saving player data in " + duration + "ms.");
          } catch (ExecutionException | InterruptedException e) {
@@ -210,7 +210,7 @@ public class PlayerDataManager {
         long startTime = System.currentTimeMillis();
 
         List<CompletableFuture<Void>> allPlayerSaves = playerDataMap.values().stream()
-            .map(this::savePlayerData) // Calls the savePlayerData method which handles the saving=true flag
+            .map(this::savePlayerData) 
             .collect(Collectors.toList());
 
         return CompletableFuture.allOf(allPlayerSaves.toArray(new CompletableFuture[0]))

@@ -10,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KitroomManager {
 
     private final TKits plugin;
-    // Map<CategoryName, Map<Slot, ItemStack>>
+    
     private final Map<String, Map<Integer, ItemStack>> categories = new ConcurrentHashMap<>();
-    // Define fixed categories
+    
     public static final List<String> CATEGORY_ORDER = List.of("armor", "sword", "utilities", "potions", "arrows", "others");
 
 
@@ -27,13 +27,13 @@ public class KitroomManager {
         ConfigurationSection categoriesSection = config.getConfigurationSection("categories");
         if (categoriesSection == null) {
             plugin.getLogger().info("Kitroom config missing 'categories' section. Generating default kitroom.");
-            generateDefaultKitroom(); // This will populate the categories map
-            saveKitroom(); // Save the defaults
+            generateDefaultKitroom(); 
+            saveKitroom(); 
             return;
         }
 
         for (String categoryKey : categoriesSection.getKeys(false)) {
-            // Validate against known categories? Or allow dynamic? Let's allow dynamic for now.
+            
             ConfigurationSection categorySec = categoriesSection.getConfigurationSection(categoryKey);
             if (categorySec == null) continue;
 
@@ -41,9 +41,9 @@ public class KitroomManager {
             for (String slotKey : categorySec.getKeys(false)) {
                 try {
                     int slot = Integer.parseInt(slotKey);
-                    // Use ItemSerialization helper for robust loading
-                    ItemStack item = categorySec.getItemStack(slotKey); // Bukkit's method handles Base64 internally now
-                    if (item != null && slot >= 0 && slot < 45) { // Validate slot range for category items
+                    
+                    ItemStack item = categorySec.getItemStack(slotKey); 
+                    if (item != null && slot >= 0 && slot < 45) { 
                         slotMap.put(slot, item);
                     } else if (item != null) {
                          plugin.getLogger().warning("Kitroom item loaded from config for invalid slot " + slot + " in category '" + categoryKey + "'. Ignoring.");
@@ -54,10 +54,10 @@ public class KitroomManager {
                      plugin.getMessageUtil().logException("Failed to load item for slot " + slotKey + " in category " + categoryKey, e);
                 }
             }
-            categories.put(categoryKey.toLowerCase(), slotMap); // Store category names in lowercase
+            categories.put(categoryKey.toLowerCase(), slotMap); 
         }
 
-        // Ensure all default categories exist, even if empty
+        
         for (String defaultCategory : CATEGORY_ORDER) {
             categories.computeIfAbsent(defaultCategory, k -> new HashMap<>());
         }
@@ -65,30 +65,30 @@ public class KitroomManager {
         if (categories.isEmpty()) {
             plugin.getLogger().info("Kitroom categories empty after load. Generating default kitroom.");
             generateDefaultKitroom();
-            saveKitroom(); // Save defaults if loading resulted in empty map
-        } // <<< ADDED CLOSING BRACE FOR loadKitroom
+            saveKitroom(); 
+        } 
     }
 
     public synchronized void saveKitroom() {
         FileConfiguration config = plugin.getConfigManager().getInternalKitroomConfigForEdit();
-        config.set("items", null); // Remove old 'items' section if it exists
-        config.set("categories", null); // Clear existing categories section before saving
+        config.set("items", null); 
+        config.set("categories", null); 
         for (Map.Entry<String, Map<Integer, ItemStack>> categoryEntry : categories.entrySet()) {
             String categoryKey = categoryEntry.getKey();
             Map<Integer, ItemStack> slotMap = categoryEntry.getValue();
-            // Don't save empty custom categories unless they are part of the default set
+            
             if (slotMap.isEmpty() && !CATEGORY_ORDER.contains(categoryKey)) {
                  continue;
             }
             for (Map.Entry<Integer, ItemStack> slotEntry : slotMap.entrySet()) {
                 String slotKey = String.valueOf(slotEntry.getKey());
                 ItemStack item = slotEntry.getValue();
-                // Use Bukkit's built-in serialization for saving ItemStacks
+                
                 if (item != null && item.getType() != org.bukkit.Material.AIR) {
                     config.set("categories." + categoryKey + "." + slotKey, item);
                 }
             }
-            // Ensure the category section exists even if empty for default categories
+            
             if (slotMap.isEmpty() && CATEGORY_ORDER.contains(categoryKey)) {
                  config.createSection("categories." + categoryKey);
             }
@@ -98,16 +98,16 @@ public class KitroomManager {
 
     public synchronized void generateDefaultKitroom() {
         categories.clear();
-        // Define default categories
+        
         for (String category : CATEGORY_ORDER) {
             categories.put(category, new HashMap<>());
         }
         plugin.getLogger().info("Generated default empty kitroom categories.");
     }
 
-    // Get category names in a defined order
+    
     public List<String> getCategoryNames() {
-        // Return fixed order, potentially adding any extra found categories at the end
+        
         List<String> sortedNames = new ArrayList<>(CATEGORY_ORDER);
         categories.keySet().stream()
             .filter(cat -> !CATEGORY_ORDER.contains(cat))
@@ -121,7 +121,7 @@ public class KitroomManager {
     }
 
     public void setCategoryItems(String categoryName, Map<Integer, ItemStack> items) {
-        categories.put(categoryName.toLowerCase(), new HashMap<>(items)); // Store clones of items? Bukkit handles this on save.
+        categories.put(categoryName.toLowerCase(), new HashMap<>(items)); 
     }
 
     public void addItemToCategory(String categoryName, int slot, ItemStack item) {

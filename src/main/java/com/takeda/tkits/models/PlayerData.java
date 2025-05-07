@@ -1,6 +1,6 @@
 package com.takeda.tkits.models;
 
-import com.takeda.tkits.TKits; // For logging potential issues
+import com.takeda.tkits.TKits; 
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,10 +12,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerData {
 
     private final UUID playerUUID;
-    // Using ConcurrentHashMap for potential async access/modification safety, though typically accessed on main thread
+    
     private final Map<Integer, Kit> kits;
-    @Setter private int lastLoadedKitNumber = -1; // Track last loaded kit, -1 = none this session
-     @Setter private boolean saving = false; // Simple flag to prevent concurrent save attempts if needed
+    @Setter private int lastLoadedKitNumber = -1; 
+     @Setter private boolean saving = false; 
 
     public PlayerData(UUID playerUUID) {
         this.playerUUID = playerUUID;
@@ -34,7 +34,7 @@ public class PlayerData {
                   TKits.getInstance().getMessageUtil().logSevere("CRITICAL: Attempted to add kit with mismatching data! "
                           + " Target UUID: " + this.playerUUID + ", Kit Num: " + kitNumber
                           + " | Actual Kit Data: UUID=" + kit.getOwner() + ", Num=" + kit.getKitNumber());
-                  // Don't add the mismatched kit to prevent data corruption
+                  
                  return;
              }
              kits.put(kitNumber, kit);
@@ -59,8 +59,8 @@ public class PlayerData {
          return kits.containsKey(kitNumber);
     }
 
-     // Get an immutable copy of the kits map for safe iteration/reading elsewhere
+     
     public Map<Integer, Kit> getKits() {
-        return Map.copyOf(this.kits); // Return immutable copy
+        return Map.copyOf(this.kits); 
     }
 }

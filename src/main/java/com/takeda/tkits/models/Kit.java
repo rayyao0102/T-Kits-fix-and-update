@@ -12,10 +12,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Kit {
-    private int kitNumber;          // 1-7
-    private UUID owner;             // Player UUID
-    private String name;            // Derived: "Kit N" (Maybe customizable later?)
-    private KitContents contents;   // Main inv/armor/offhand contents
-    private KitContents enderChestContents; // Linked Ender Chest contents
-    private boolean global;         // Is this kit publicly browsable?
+    private int kitNumber;          
+    private UUID owner;             
+    private String name;            
+    private KitContents contents;   
+    private KitContents enderChestContents; 
+    private boolean global;         
 }

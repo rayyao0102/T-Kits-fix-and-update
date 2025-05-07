@@ -78,7 +78,7 @@ public final class TKits extends JavaPlugin {
     @Override
     public void onDisable() {
         if (playerDataManager != null) {
-            playerDataManager.saveAllPlayerDataBlocking(); // Use blocking save on shutdown
+            playerDataManager.saveAllPlayerDataBlocking(); 
         }
 
         if (storageHandler != null) {
@@ -86,7 +86,7 @@ public final class TKits extends JavaPlugin {
         }
 
          if(commandManager != null) {
-             commandManager.unregisterCommands(); // Clean up commands
+             commandManager.unregisterCommands(); 
          }
 
         this.getLogger().info("T-Kits has been disabled.");
@@ -94,13 +94,13 @@ public final class TKits extends JavaPlugin {
     }
 
     private void loadConfiguration() {
-        // Ensure ConfigManager instance exists
+        
         if (this.configManager == null) {
-             this.configManager = new ConfigManager(this); // Initialize if it's null (should only happen on first load)
-             // Load initial configs (setupFiles is called in constructor)
-             // ConfigManager constructor now calls loadConfigs itself
+             this.configManager = new ConfigManager(this); 
+             
+             
         } else {
-            // If ConfigManager already exists (e.g., during reload), tell it to reload all files
+            
             this.configManager.loadConfigs();
         }
     }
@@ -118,7 +118,7 @@ public final class TKits extends JavaPlugin {
                     break;
                 case "YAML":
                 default:
-                     storageType = "YAML"; // Ensure correct name for logging if default used
+                     storageType = "YAML"; 
                     this.storageHandler = new YamlStorageHandler(this);
                     break;
             }
@@ -140,16 +140,16 @@ public final class TKits extends JavaPlugin {
 
      private void setupManagersAndServices() {
         this.playerDataManager = new PlayerDataManager(this);
-        // Initialize services needed by managers first
+        
         this.cooldownService = new CooldownService(this);
-        this.utilityService = new UtilityService(this); // Initialize UtilityService
+        this.utilityService = new UtilityService(this); 
 
-        // Initialize managers that might depend on services
+        
         this.kitManager = new KitManager(this);
         this.kitroomManager = new KitroomManager(this);
         this.combatTagManager = new CombatTagManager(this);
         this.shareCodeManager = new ShareCodeManager(this);
-        this.guiManager = new GuiManager(this); // GuiManager depends on others
+        this.guiManager = new GuiManager(this); 
 
         kitManager.loadGlobalKitsFromStorage();
      }
@@ -167,11 +167,11 @@ public final class TKits extends JavaPlugin {
     private void registerCommands() {
         commandManager = new PaperCommandManager(this);
 
-        // Set messages provider (optional but good for consistency)
-        commandManager.getLocales().addMessageBundles("tkits-lang"); // Assumes a language file if needed, basic approach here uses MessageUtil
+        
+        commandManager.getLocales().addMessageBundles("tkits-lang"); 
         commandManager.getLocales().setDefaultLocale(java.util.Locale.ENGLISH);
 
-         // Configure ACF Completions & Contexts
+         
          commandManager.getCommandCompletions().registerAsyncCompletion("tkits_kits", c -> {
              Player player = c.getPlayer();
              if (player == null) return List.of("1","2","3","4","5","6","7");
@@ -181,7 +181,7 @@ public final class TKits extends JavaPlugin {
              }
              return List.of("1","2","3","4","5","6","7");
          });
-          commandManager.getCommandCompletions().registerAsyncCompletion("tkits_own_kits", c -> { // Only show existing kits owned by player
+          commandManager.getCommandCompletions().registerAsyncCompletion("tkits_own_kits", c -> { 
              Player player = c.getPlayer();
              if (player == null) return List.of();
              PlayerData data = this.getPlayerDataManager().getPlayerData(player);
@@ -195,7 +195,7 @@ public final class TKits extends JavaPlugin {
         commandManager.getCommandCompletions().registerCompletion("confirm", c -> List.of("confirm"));
 
 
-        // Register command classes
+        
         commandManager.registerCommand(new KitCommand(this));
         commandManager.registerCommand(new DirectKitLoadCommands(this));
         commandManager.registerCommand(new UtilityCommands(this));
@@ -208,7 +208,7 @@ public final class TKits extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
         Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);
         Bukkit.getPluginManager().registerEvents(new InteractionListener(this), this);
-         if (combatTagManager.isInternalCombatTagEnabled()) { // Only register combat tag listener if using internal system
+         if (combatTagManager.isInternalCombatTagEnabled()) { 
             Bukkit.getPluginManager().registerEvents(combatTagManager, this);
          }
         this.getLogger().info("Listeners registered.");
@@ -219,11 +219,11 @@ public final class TKits extends JavaPlugin {
     }
 
     private void registerPlaceholders() {
-        if (setupPlaceholderAPI()) { // Use the check method
+        if (setupPlaceholderAPI()) { 
            new TKitsPlaceholderExpansion(this).register();
            this.getLogger().info("PlaceholderAPI expansion registered.");
         } else {
-            // Warning already logged in onEnable
+            
         }
     }
 
@@ -231,31 +231,31 @@ public final class TKits extends JavaPlugin {
          this.getLogger().info("Reloading T-Kits...");
          long startTime = System.currentTimeMillis();
 
-         // Save any pending data
-         playerDataManager.saveAllPlayerData().join(); // Wait for async saves during reload? Or just fire-and-forget? Waiting might be safer.
+         
+         playerDataManager.saveAllPlayerData().join(); 
 
-         // Shutdown existing resources (Careful: reloading HikariCP is complex)
-          // Best practice often avoids fully reloading database connections unless necessary.
-          // Just reload config files here. Full reload might require /restart.
+         
+          
+          
 
-         // 1. Reload Configuration
-         loadConfiguration(); // This will now call configManager.loadConfigs()
+         
+         loadConfiguration(); 
 
-         // 2. Re-read config settings for managers/services
-          combatTagManager.reloadConfigSettings(); // Add method to CombatTagManager to update duration etc.
-          cooldownService.loadCooldowns(); // Reload cooldown durations
-          messageUtil.reloadMessages(); // Reload messages from config
-          messageUtil.reloadPrefix(); // Reload prefix from config
-          shareCodeManager.reloadConfigSettings(); // Add method
-         // Reload GUI Manager settings if necessary? (Likely reads directly from config on use)
-         guiManager.reloadGuiConfig(); // Add this method to reload titles/item defs
+         
+          combatTagManager.reloadConfigSettings(); 
+          cooldownService.loadCooldowns(); 
+          messageUtil.reloadMessages(); 
+          messageUtil.reloadPrefix(); 
+          shareCodeManager.reloadConfigSettings(); 
+         
+         guiManager.reloadGuiConfig(); 
 
 
-          // 4. Reregister commands? ACF might handle updates, or may need unregister/register
-          // Let's assume config changes affecting commands are rare, skip re-register for now.
+          
+          
 
           long duration = System.currentTimeMillis() - startTime;
          this.getLogger().info("T-Kits reloaded successfully in " + duration + "ms.");
-         messageUtil.logInfo("Plugin configuration reloaded."); // Log to console via MessageUtil too
+         messageUtil.logInfo("Plugin configuration reloaded."); 
     }
 }

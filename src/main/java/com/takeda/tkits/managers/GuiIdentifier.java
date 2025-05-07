@@ -1,5 +1,5 @@
-// ========== JAVA FILE: src/main/java/com/takeda/tkits/managers/GuiIdentifier.java ==========
-package com.takeda.tkits.managers; // Or com.takeda.tkits.api
+
+package com.takeda.tkits.managers; 
 
 /**
  * Identifies the different types of GUIs managed by GuiManager.

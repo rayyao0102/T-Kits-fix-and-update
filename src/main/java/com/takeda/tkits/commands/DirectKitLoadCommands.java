@@ -12,8 +12,8 @@ public class DirectKitLoadCommands extends BaseCommand {
 
     private final TKits plugin;
     private final KitManager kitManager;
-    private final CombatTagManager combatTagManager; // Needed for combat check
-    private final CooldownService cooldownService;   // Needed for cooldown check
+    private final CombatTagManager combatTagManager; 
+    private final CooldownService cooldownService;   
 
     public DirectKitLoadCommands(TKits plugin) {
         this.plugin = plugin;
@@ -22,17 +22,17 @@ public class DirectKitLoadCommands extends BaseCommand {
         this.cooldownService = plugin.getCooldownService();
     }
 
-    // Consolidated logic for loading, called by specific command handlers
+    
     private void attemptLoadKit(Player player, int kitNumber) {
-        // Permission check already handled by ACF annotation before method is called
+        
 
-        // 1. Check Player Data
+        
         if (plugin.getPlayerDataManager().getPlayerData(player) == null) {
              plugin.getMessageUtil().sendMessage(player, "data_loading_please_wait");
             return;
         }
 
-        // 2. Check Combat Tag
+        
          if (combatTagManager.isTagged(player) && !player.hasPermission("tkits.admin")) {
              long remaining = combatTagManager.getRemainingTagTimeMillis(player);
              plugin.getMessageUtil().sendMessage(player, "in_combat", "time", String.format("%.1f", remaining / 1000.0));
@@ -40,14 +40,14 @@ public class DirectKitLoadCommands extends BaseCommand {
              return;
          }
 
-        // 3. Check Cooldown (KitManager's loadKit handles this internally now)
-        // Redundant check removed here, let kitManager handle it for consistency
+        
+        
 
-        // 4. Attempt to load
-        kitManager.loadKit(player, kitNumber); // This method now checks cooldown and handles messages/sounds
+        
+        kitManager.loadKit(player, kitNumber); 
     }
 
-    // --- Individual Command Handlers ---
+    
 
     @CommandAlias("k1") @Description("Loads Kit 1") @CommandPermission("tkits.load.1") @Default
     public void onKit1(Player player) { attemptLoadKit(player, 1); }

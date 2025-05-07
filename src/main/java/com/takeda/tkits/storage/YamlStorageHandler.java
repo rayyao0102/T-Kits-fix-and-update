@@ -22,15 +22,15 @@ public class YamlStorageHandler implements StorageHandler {
     private final File globalKitsFile;
     private FileConfiguration globalKitsConfig;
     private final ExecutorService executor;
-    private final Object globalLock = new Object(); // Lock for global file operations
+    private final Object globalLock = new Object(); 
 
     public YamlStorageHandler(TKits plugin) {
         this.plugin = plugin;
         this.playerDataFolder = new File(plugin.getDataFolder(), "playerdata");
         this.globalKitsFile = new File(plugin.getDataFolder(), "global_kits.yml");
-        // Use a cached thread pool for potentially many small file IO tasks? Or single thread?
-        // Single thread guarantees order but can bottleneck. Cached might be better for concurrent player loads.
-        // Let's stick with single thread for simplicity and safety with global file.
+        
+        
+        
         this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "T-Kits-YAML-Storage");
             t.setDaemon(true);
@@ -51,7 +51,7 @@ public class YamlStorageHandler implements StorageHandler {
                      }
                      globalKitsConfig = YamlConfiguration.loadConfiguration(globalKitsFile);
                      if (!globalKitsConfig.isConfigurationSection("kits")) {
-                          globalKitsConfig.createSection("kits"); // Ensure 'kits' section exists
+                          globalKitsConfig.createSection("kits"); 
                      }
                      globalKitsConfig.save(globalKitsFile);
                  } catch (IOException e) {
@@ -59,12 +59,12 @@ public class YamlStorageHandler implements StorageHandler {
                  }
              } else {
                   globalKitsConfig = YamlConfiguration.loadConfiguration(globalKitsFile);
-                  // Optional: Add migration/version check for global file format here later if needed
+                  
              }
          }
     }
 
-    // ... (previous code from YamlStorageHandler) ...
+    
 
     @Override
     public void shutdown() {
@@ -80,13 +80,13 @@ public class YamlStorageHandler implements StorageHandler {
         return CompletableFuture.supplyAsync(() -> {
              File playerFile = getPlayerFile(playerUUID);
              if (!playerFile.exists()) {
-                 return new YamlConfiguration(); // Return empty config if file doesn't exist
+                 return new YamlConfiguration(); 
              }
              try {
                  return YamlConfiguration.loadConfiguration(playerFile);
              } catch (Exception e) {
                   plugin.getMessageUtil().logException("Failed to load config for player " + playerUUID, e);
-                 return new YamlConfiguration(); // Return empty on error
+                 return new YamlConfiguration(); 
              }
          }, executor);
     }
@@ -98,7 +98,7 @@ public class YamlStorageHandler implements StorageHandler {
             Map<Integer, Kit> kits = new HashMap<>();
             ConfigurationSection kitsSection = config.getConfigurationSection("kits");
             if (kitsSection == null) {
-                return kits; // No 'kits' section
+                return kits; 
             }
 
             for (String key : kitsSection.getKeys(false)) {
@@ -113,39 +113,39 @@ public class YamlStorageHandler implements StorageHandler {
                     }
                 } catch (NumberFormatException e) {
                     plugin.getMessageUtil().logWarning("Invalid kit number format '" + key + "' in file for " + playerUUID);
-                } catch (Exception e) { // Catch broader exceptions from deserializeKit
+                } catch (Exception e) { 
                     plugin.getMessageUtil().logException("Failed to deserialize kit " + key + " for player " + playerUUID, e);
                 }
             }
             return kits;
-        }, executor); // Continue processing on the executor thread
+        }, executor); 
     }
 
     @Override
     public CompletableFuture<Void> savePlayerKit(UUID playerUUID, Kit kit) {
-         // Load existing config -> Modify -> Save
+         
         return loadPlayerConfigAsync(playerUUID).thenComposeAsync(config -> {
-             // Ensure kit owner matches playerUUID (critical safety check)
+             
              if (!kit.getOwner().equals(playerUUID)) {
                  plugin.getMessageUtil().logSevere("CRITICAL SAVE ERROR: Attempted to save kit for player " + playerUUID
                      + " but kit owner is " + kit.getOwner() + ". Aborting save for Kit " + kit.getKitNumber());
-                  return CompletableFuture.completedFuture(null); // Indicate failure potentially? Or just abort? Abort for safety.
+                  return CompletableFuture.completedFuture(null); 
              }
 
              ConfigurationSection kitSection = config.createSection("kits." + kit.getKitNumber());
-             serializeKit(kitSection, kit); // Serialize data into the config object
+             serializeKit(kitSection, kit); 
 
-             // Save the modified config back to file
+             
              return CompletableFuture.runAsync(() -> {
                  File playerFile = getPlayerFile(playerUUID);
                  try {
                      config.save(playerFile);
                  } catch (IOException e) {
                      plugin.getMessageUtil().logException("Could not save player data for " + playerUUID, e);
-                      throw new RuntimeException(e); // Propagate exception for CompletableFuture
+                      throw new RuntimeException(e); 
                  }
              }, executor);
-         }, executor); // Composition should also happen on executor
+         }, executor); 
     }
 
 
@@ -153,27 +153,27 @@ public class YamlStorageHandler implements StorageHandler {
     public CompletableFuture<Void> deletePlayerKit(UUID playerUUID, int kitNumber) {
         return loadPlayerConfigAsync(playerUUID).thenComposeAsync(config -> {
             if (!config.isConfigurationSection("kits." + kitNumber)) {
-                 return CompletableFuture.completedFuture(null); // Kit doesn't exist, nothing to delete
+                 return CompletableFuture.completedFuture(null); 
             }
 
              config.set("kits." + kitNumber, null);
 
              ConfigurationSection kitsSection = config.getConfigurationSection("kits");
             if (kitsSection != null && kitsSection.getKeys(false).isEmpty()) {
-                 config.set("kits", null); // Clean up empty 'kits' section
+                 config.set("kits", null); 
              }
 
-            // Save changes or delete file if empty
+            
             return CompletableFuture.runAsync(() -> {
                  File playerFile = getPlayerFile(playerUUID);
                  try {
-                     // Check if the entire configuration is empty after removal
+                     
                      if (config.getKeys(false).isEmpty()) {
                          if (playerFile.exists() && !playerFile.delete()) {
                              plugin.getMessageUtil().logWarning("Could not delete empty player file: " + playerFile.getName());
                          }
                      } else {
-                         config.save(playerFile); // Save if still has content
+                         config.save(playerFile); 
                      }
                  } catch (IOException e) {
                      plugin.getMessageUtil().logException("Could not save player data after deleting kit for " + playerUUID, e);
@@ -183,13 +183,13 @@ public class YamlStorageHandler implements StorageHandler {
         }, executor);
     }
 
-     // --- Global Kits Handling ---
+     
 
     private CompletableFuture<Void> reloadGlobalConfigAsync() {
         return CompletableFuture.runAsync(() -> {
             synchronized (globalLock) {
                 if (!globalKitsFile.exists()) {
-                    init(); // Re-initialize if file somehow disappeared
+                    init(); 
                 } else {
                     globalKitsConfig = YamlConfiguration.loadConfiguration(globalKitsFile);
                 }
@@ -202,14 +202,14 @@ public class YamlStorageHandler implements StorageHandler {
     public CompletableFuture<List<Kit>> loadGlobalKits() {
         return reloadGlobalConfigAsync().thenApplyAsync(v -> {
             List<Kit> globalKits = new ArrayList<>();
-            synchronized (globalLock) { // Ensure thread safety reading the config
+            synchronized (globalLock) { 
                  ConfigurationSection kitsSection = globalKitsConfig.getConfigurationSection("kits");
                  if (kitsSection == null) {
                      return globalKits;
                  }
 
                  for (String key : kitsSection.getKeys(false)) {
-                     String[] parts = key.split("_", 2); // Split only on first underscore
+                     String[] parts = key.split("_", 2); 
                      if (parts.length == 2) {
                           try {
                              UUID ownerUUID = UUID.fromString(parts[0]);
@@ -221,8 +221,8 @@ public class YamlStorageHandler implements StorageHandler {
                                      globalKits.add(kit);
                                  } else if (kit != null && !kit.isGlobal()){
                                       plugin.getMessageUtil().logWarning("Kit " + key + " in global_kits.yml but not marked global. Data inconsistency?");
-                                     // Consider removing inconsistent entry here?
-                                     // kitsSection.set(key, null); // Requires saving config later
+                                     
+                                     
                                  }
                              }
                          } catch (IllegalArgumentException e) {
@@ -234,7 +234,7 @@ public class YamlStorageHandler implements StorageHandler {
                           plugin.getMessageUtil().logWarning("Invalid key format '" + key + "' in global_kits.yml. Should be UUID_KitNumber.");
                      }
                  }
-             } // end synchronized block
+             } 
              return globalKits;
         }, executor);
     }
@@ -243,87 +243,87 @@ public class YamlStorageHandler implements StorageHandler {
     @Override
     public CompletableFuture<Void> saveGlobalKit(Kit kit) {
          if (!kit.isGlobal()) {
-             // This method is specifically for marking/saving kits intended to be global.
-             // If called with a non-global kit, maybe log a warning? Or just update player file?
-             // Let's enforce that saveGlobalKit is for kits explicitly marked global.
+             
+             
+             
               plugin.getMessageUtil().logWarning("Attempted saveGlobalKit for a non-global kit instance: "
                      + kit.getOwner() + " Kit " + kit.getKitNumber() + ". Saving to player file only.");
-             // Update the player's file to ensure the 'is_global=false' flag is saved there.
+             
               return savePlayerKit(kit.getOwner(), kit);
          }
 
-        // Update the player's file first to ensure consistency
-        return savePlayerKit(kit.getOwner(), kit).thenComposeAsync(v -> reloadGlobalConfigAsync(), executor) // Reload global config *after* player save completes
+        
+        return savePlayerKit(kit.getOwner(), kit).thenComposeAsync(v -> reloadGlobalConfigAsync(), executor) 
               .thenComposeAsync(v -> CompletableFuture.runAsync(() -> {
-                 synchronized (globalLock) { // Lock for modifying global config
+                 synchronized (globalLock) { 
                       ConfigurationSection kitsSection = globalKitsConfig.getConfigurationSection("kits");
                       if (kitsSection == null) {
-                           kitsSection = globalKitsConfig.createSection("kits"); // Ensure section exists
+                           kitsSection = globalKitsConfig.createSection("kits"); 
                       }
 
                      String key = kit.getOwner().toString() + "_" + kit.getKitNumber();
-                     ConfigurationSection kitSection = kitsSection.createSection(key); // Create or replace
-                     serializeKit(kitSection, kit); // Serialize into the global config object
+                     ConfigurationSection kitSection = kitsSection.createSection(key); 
+                     serializeKit(kitSection, kit); 
 
-                     // Save the global config immediately after modification
+                     
                      try {
                          globalKitsConfig.save(globalKitsFile);
                      } catch (IOException e) {
                           plugin.getMessageUtil().logException("Could not save global_kits.yml after adding kit " + key, e);
-                          throw new RuntimeException(e); // Propagate failure
+                          throw new RuntimeException(e); 
                      }
                  }
-             }, executor), executor); // Ensure save runs on executor too
+             }, executor), executor); 
     }
 
 
     @Override
     public CompletableFuture<Void> deleteGlobalKit(UUID ownerUUID, int kitNumber) {
-         // Step 1: Update the player's kit file to set global = false
-         return loadPlayerKits(ownerUUID).thenComposeAsync(playerKits -> { // Load player kits first
+         
+         return loadPlayerKits(ownerUUID).thenComposeAsync(playerKits -> { 
               Kit kit = playerKits.get(kitNumber);
               if (kit != null && kit.isGlobal()) {
                   Kit updatedKit = kit.toBuilder().global(false).build();
-                  return savePlayerKit(ownerUUID, updatedKit); // Save the updated non-global state to player file
+                  return savePlayerKit(ownerUUID, updatedKit); 
               }
-              return CompletableFuture.completedFuture(null); // Kit doesn't exist or wasn't global
+              return CompletableFuture.completedFuture(null); 
          }, executor)
-         .thenComposeAsync(v -> reloadGlobalConfigAsync(), executor) // Reload global config after player save
+         .thenComposeAsync(v -> reloadGlobalConfigAsync(), executor) 
          .thenComposeAsync(v -> CompletableFuture.runAsync(() -> {
-             // Step 2: Remove the entry from global_kits.yml
-              synchronized (globalLock) { // Lock for modifying global config
+             
+              synchronized (globalLock) { 
                  ConfigurationSection kitsSection = globalKitsConfig.getConfigurationSection("kits");
                  if (kitsSection == null) {
-                     return; // Nothing to delete
+                     return; 
                  }
                  String key = ownerUUID.toString() + "_" + kitNumber;
                  if (!kitsSection.contains(key)) {
-                      return; // Key doesn't exist
+                      return; 
                  }
 
-                 kitsSection.set(key, null); // Remove the kit entry
+                 kitsSection.set(key, null); 
 
                   if (kitsSection.getKeys(false).isEmpty()) {
-                      globalKitsConfig.set("kits", null); // Clean up empty 'kits' section
+                      globalKitsConfig.set("kits", null); 
                   }
 
-                 // Save the global config immediately
+                 
                   try {
                       globalKitsConfig.save(globalKitsFile);
                   } catch (IOException e) {
                       plugin.getMessageUtil().logException("Could not save global_kits.yml after removing kit " + key, e);
                        throw new RuntimeException(e);
                   }
-             } // end synchronized
+             } 
          }, executor), executor);
     }
 
-    // --- Serialization/Deserialization Helpers (Remain same) ---
+    
 
     private void serializeKit(ConfigurationSection section, Kit kit) {
-         section.set("owner", kit.getOwner().toString()); // Store owner for reference/consistency checks
+         section.set("owner", kit.getOwner().toString()); 
          section.set("global", kit.isGlobal());
-         section.set("contents", KitContents.serialize(kit.getContents())); // Null safe serialize handles empty/null
+         section.set("contents", KitContents.serialize(kit.getContents())); 
          section.set("enderchest_contents", KitContents.serialize(kit.getEnderChestContents()));
     }
 
@@ -332,27 +332,27 @@ public class YamlStorageHandler implements StorageHandler {
             String ownerStr = section.getString("owner");
             UUID owner = (ownerStr != null && !ownerStr.isEmpty()) ? UUID.fromString(ownerStr) : defaultOwner;
 
-             KitContents contents = KitContents.deserialize(section.getString("contents")); // Null safe deserialize handles empty/null
+             KitContents contents = KitContents.deserialize(section.getString("contents")); 
              KitContents echestContents = KitContents.deserialize(section.getString("enderchest_contents"));
              boolean isGlobal = section.getBoolean("global", false);
 
              return Kit.builder()
                  .kitNumber(kitNumber)
                  .owner(owner)
-                 .name("Kit " + kitNumber) // Use standard naming for now
+                 .name("Kit " + kitNumber) 
                  .contents(contents)
                  .enderChestContents(echestContents)
                  .global(isGlobal)
                  .build();
 
-         } catch (Exception e) { // Catch potential UUID format, IO, ClassCast etc.
+         } catch (Exception e) { 
             plugin.getMessageUtil().logException("Deserialization error for kit " + kitNumber + " owned by " + defaultOwner + " in section " + section.getCurrentPath(), e);
-            return null; // Return null on failure to prevent loading broken data
+            return null; 
          }
     }
 
 
-    // --- Migration Methods (YAML -> Target) ---
+    
 
      @Override
      public CompletableFuture<Void> migratePlayerData(UUID playerUUID, StorageHandler targetHandler) {
@@ -366,7 +366,7 @@ public class YamlStorageHandler implements StorageHandler {
                  .map(kit -> targetHandler.savePlayerKit(playerUUID, kit)
                      .exceptionally(ex -> {
                          plugin.getMessageUtil().logException("Failed migrating kit " + kit.getKitNumber() + " for player " + playerUUID, ex);
-                         return null; // Continue migration even if one kit fails
+                         return null; 
                       })
                  )
                  .collect(Collectors.toList());
@@ -379,10 +379,10 @@ public class YamlStorageHandler implements StorageHandler {
          plugin.getMessageUtil().logInfo("Starting full migration from YAML to " + targetHandler.getClass().getSimpleName() + "...");
          List<CompletableFuture<Void>> allMigrations = new ArrayList<>();
 
-         // --- Migrate Global Kits first (if any meaningful data exists there) ---
-          // Note: With the current logic, global kits are just flags on player kits,
-          // so migrating players *should* cover globals. This load is mostly for completeness
-          // or if global file contained orphaned data.
+         
+          
+          
+          
           allMigrations.add(
               loadGlobalKits().thenComposeAsync(globalKits -> {
                   if (globalKits.isEmpty()) {
@@ -391,7 +391,7 @@ public class YamlStorageHandler implements StorageHandler {
                   }
                   plugin.getMessageUtil().logInfo("Migrating " + globalKits.size() + " potential global kit entries...");
                   List<CompletableFuture<Void>> globalSaveFutures = globalKits.stream()
-                       // Ensure target saves them correctly (as global)
+                       
                       .map(targetHandler::saveGlobalKit)
                       .collect(Collectors.toList());
                   return CompletableFuture.allOf(globalSaveFutures.toArray(new CompletableFuture[0]))
@@ -400,11 +400,11 @@ public class YamlStorageHandler implements StorageHandler {
           );
 
 
-         // --- Migrate Player Data (Iterate through playerdata files) ---
-         File[] playerFiles = playerDataFolder.listFiles((dir, name) -> name.endsWith(".yml") && name.length() == 40); // 36 UUID chars + 4 ".yml"
+         
+         File[] playerFiles = playerDataFolder.listFiles((dir, name) -> name.endsWith(".yml") && name.length() == 40); 
          if (playerFiles == null) {
               plugin.getMessageUtil().logWarning("Could not list files in playerdata directory for migration.");
-              playerFiles = new File[0]; // Ensure not null
+              playerFiles = new File[0]; 
          } else {
               plugin.getMessageUtil().logInfo("Found " + playerFiles.length + " potential player data files to migrate...");
          }
@@ -412,10 +412,10 @@ public class YamlStorageHandler implements StorageHandler {
          for (File playerFile : playerFiles) {
              String fileName = playerFile.getName();
              try {
-                 UUID playerUUID = UUID.fromString(fileName.substring(0, 36)); // Extract UUID
+                 UUID playerUUID = UUID.fromString(fileName.substring(0, 36)); 
                  allMigrations.add(
                      migratePlayerData(playerUUID, targetHandler)
-                         // Optionally log per player on success/failure during migration
+                         
                           .thenRun(() -> plugin.getLogger().fine("Migrated YAML data for player: " + playerUUID))
                  );
              } catch (IllegalArgumentException e) {
@@ -423,7 +423,7 @@ public class YamlStorageHandler implements StorageHandler {
              }
          }
 
-         // --- Combine and Finalize ---
+         
          return CompletableFuture.allOf(allMigrations.toArray(new CompletableFuture[0]))
                   .thenRun(() -> {
                      plugin.getMessageUtil().logInfo("YAML migration process finished successfully.");

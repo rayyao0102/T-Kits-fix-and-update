@@ -21,18 +21,18 @@ public class MySQLStorageHandler implements StorageHandler {
     private final TKits plugin;
     private HikariDataSource dataSource;
     private final ExecutorService executor;
-    private final String playerKitsTable; // Store table name
+    private final String playerKitsTable; 
 
     public MySQLStorageHandler(TKits plugin) {
         this.plugin = plugin;
-        // Use a fixed thread pool size based on config, good for DB operations
+        
         int poolSize = plugin.getConfigManager().getMainConfig().getInt("storage.mysql.pool_settings.maximum_pool_size", 5);
         this.executor = Executors.newFixedThreadPool(poolSize, r -> {
             Thread t = new Thread(r, "T-Kits-MySQL-Worker");
             t.setDaemon(true);
             return t;
          });
-         this.playerKitsTable = "`tkits_player_kits`"; // Use backticks for safety
+         this.playerKitsTable = "`tkits_player_kits`"; 
     }
 
     @Override
@@ -54,22 +54,22 @@ public class MySQLStorageHandler implements StorageHandler {
         config.setUsername(mysqlConfig.getString("username", "user"));
         config.setPassword(mysqlConfig.getString("password", "password"));
         try {
-             config.setDriverClassName("com.mysql.cj.jdbc.Driver"); // Explicitly set modern driver
-         } catch (RuntimeException e) { // Catch if driver class is not found
+             config.setDriverClassName("com.mysql.cj.jdbc.Driver"); 
+         } catch (RuntimeException e) { 
              throw new SQLException("MySQL JDBC Driver (com.mysql.cj.jdbc.Driver) not found. Ensure it's included.", e);
          }
 
 
         ConfigurationSection poolSettings = mysqlConfig.getConfigurationSection("pool_settings");
         config.setMaximumPoolSize(poolSettings != null ? poolSettings.getInt("maximum_pool_size", 10) : 10);
-        config.setMinimumIdle(poolSettings != null ? poolSettings.getInt("minimum_idle", config.getMaximumPoolSize() / 2) : 5); // Default minIdle to half maxPool
+        config.setMinimumIdle(poolSettings != null ? poolSettings.getInt("minimum_idle", config.getMaximumPoolSize() / 2) : 5); 
         config.setIdleTimeout(poolSettings != null ? poolSettings.getLong("idle_timeout", 300000L) : 300000L);
         config.setConnectionTimeout(poolSettings != null ? poolSettings.getLong("connection_timeout", 30000L) : 30000L);
         config.setMaxLifetime(poolSettings != null ? poolSettings.getLong("max_lifetime", 1800000L) : 1800000L);
-        // Optional Leak Detection
-        // config.setLeakDetectionThreshold(TimeUnit.SECONDS.toMillis(10)); // Example: 10 seconds
+        
+        
 
-        // Recommended HikariCP MySQL optimizations
+        
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
@@ -82,10 +82,10 @@ public class MySQLStorageHandler implements StorageHandler {
         config.addDataSourceProperty("maintainTimeStats", "false");
 
         boolean useSSL = mysqlConfig.getBoolean("useSSL", false);
-         config.addDataSourceProperty("useSSL", String.valueOf(useSSL)); // Add as string property
+         config.addDataSourceProperty("useSSL", String.valueOf(useSSL)); 
          if (useSSL) {
-             // Add verifyServerCertificate=false for basic SSL without full verification if needed for testing
-             // config.addDataSourceProperty("verifyServerCertificate", "false");
+             
+             
               plugin.getMessageUtil().logInfo("MySQL SSL enabled.");
          }
 
@@ -97,7 +97,7 @@ public class MySQLStorageHandler implements StorageHandler {
         } catch (Exception e) {
             plugin.getMessageUtil().logException("Failed to initialize MySQL connection pool", e);
             if (this.dataSource != null) {
-                 this.dataSource.close(); // Ensure pool is closed if setup failed partially
+                 this.dataSource.close(); 
             }
             throw new SQLException("Could not establish initial MySQL connection or setup tables.", e);
         }
@@ -111,17 +111,17 @@ public class MySQLStorageHandler implements StorageHandler {
                  "`enderchest_contents` LONGTEXT DEFAULT NULL, " +
                  "`is_global` BOOLEAN NOT NULL DEFAULT FALSE, " +
                  "PRIMARY KEY (`owner_uuid`, `kit_number`)," +
-                 "INDEX `idx_global` (`is_global`)" + // Index for efficient global kit lookups
-                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"; // Recommended charset/collation
+                 "INDEX `idx_global` (`is_global`)" + 
+                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"; 
 
          long startTime = System.nanoTime();
-         try (Connection conn = getConnection(); // Use helper to get connection
+         try (Connection conn = getConnection(); 
               Statement stmt = conn.createStatement()) {
              stmt.execute(sql);
               plugin.getLogger().fine("Ensured table " + playerKitsTable + " exists. Time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + "ms");
          } catch (SQLException e) {
              plugin.getMessageUtil().logException("Failed to create or verify table: " + playerKitsTable, e);
-             throw e; // Re-throw critical error
+             throw e; 
          }
     }
 
@@ -143,21 +143,21 @@ public class MySQLStorageHandler implements StorageHandler {
          }
     }
 
-     // --- Helper Methods for DB Operations ---
+     
 
      private Connection getConnection() throws SQLException {
          if (dataSource == null || dataSource.isClosed()) {
              throw new SQLException("DataSource is not available.");
          }
-         // Optional: Add connection validation or retry logic here if needed
+         
          return dataSource.getConnection();
      }
 
-    // Generic async query execution
+    
     private <T> CompletableFuture<T> executeQueryAsync(SQLFunction<ResultSet, T> handler, String sql, Object... params) {
         return CompletableFuture.supplyAsync(() -> {
             long start = System.nanoTime();
-            String finalSql = sql.replace("?", "{}"); // For logging prepared statement structure
+            String finalSql = sql.replace("?", "{}"); 
             plugin.getLogger().finest(() -> "Executing SQL Query: " + String.format(finalSql, params));
 
             try (Connection conn = getConnection();
@@ -165,18 +165,18 @@ public class MySQLStorageHandler implements StorageHandler {
 
                 setParameters(ps, params);
                 try (ResultSet rs = ps.executeQuery()) {
-                    T result = handler.apply(rs); // Let handler process the result set
+                    T result = handler.apply(rs); 
                     plugin.getLogger().finest(() -> "SQL Query completed successfully. Time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
                     return result;
                 }
-            } catch (Exception e) { // Catch broader exceptions from handler.apply too
+            } catch (Exception e) { 
                  plugin.getMessageUtil().logException("Database query error: " + e.getMessage() + " SQL: " + sql, e);
-                 throw new RuntimeException(e); // Propagate for CF error handling
+                 throw new RuntimeException(e); 
             }
         }, executor);
     }
 
-    // Generic async update/insert/delete execution
+    
     private CompletableFuture<Integer> executeUpdateAsync(String sql, Object... params) {
          return CompletableFuture.supplyAsync(() -> {
              long start = System.nanoTime();
@@ -200,7 +200,7 @@ public class MySQLStorageHandler implements StorageHandler {
 
     private void setParameters(PreparedStatement ps, Object... params) throws SQLException {
         for (int i = 0; i < params.length; i++) {
-            // Handle UUID -> String conversion automatically
+            
              if (params[i] instanceof UUID) {
                 ps.setString(i + 1, params[i].toString());
              } else {
@@ -210,7 +210,7 @@ public class MySQLStorageHandler implements StorageHandler {
     }
 
 
-    // --- Interface Implementation ---
+    
 
     @Override
     public CompletableFuture<Map<Integer, Kit>> loadPlayerKits(UUID playerUUID) {
@@ -230,24 +230,24 @@ public class MySQLStorageHandler implements StorageHandler {
                      kits.put(kitNumber, Kit.builder()
                              .kitNumber(kitNumber)
                              .owner(playerUUID)
-                             .name("Kit " + kitNumber) // Standard name
+                             .name("Kit " + kitNumber) 
                              .contents(contents)
                              .enderChestContents(echestContents)
                              .global(isGlobal)
                              .build());
-                 } catch (Exception e) { // Catch deserialization or other errors per kit
+                 } catch (Exception e) { 
                       plugin.getMessageUtil().logException("Failed to deserialize kit " + kitNumber + " for player " + playerUUID, e);
-                      // Skip this kit but continue loading others
+                      
                  }
             }
             return kits;
-        }, sql, playerUUID); // Pass UUID directly, setParameters handles toString
+        }, sql, playerUUID); 
     }
 
 
     @Override
     public CompletableFuture<Void> savePlayerKit(UUID playerUUID, Kit kit) {
-        // Ensure consistency
+        
         if (!kit.getOwner().equals(playerUUID) || kit.getKitNumber() <= 0) {
              plugin.getMessageUtil().logSevere("Invalid Kit object passed to savePlayerKit: Mismatched owner/invalid number. Aborting save. Kit: " + kit);
             return CompletableFuture.failedFuture(new IllegalArgumentException("Invalid Kit data for saving."));
@@ -264,12 +264,12 @@ public class MySQLStorageHandler implements StorageHandler {
             String echestData = KitContents.serialize(kit.getEnderChestContents());
 
             return executeUpdateAsync(sql,
-                     kit.getOwner(), // Pass UUID directly
+                     kit.getOwner(), 
                      kit.getKitNumber(),
                      contentsData,
                      echestData,
                      kit.isGlobal()
-            ).thenAccept(rowsAffected -> { // Void return type needed
+            ).thenAccept(rowsAffected -> { 
                  if (rowsAffected == 0) {
                       plugin.getLogger().warning("Upsert operation for kit " + kit.getKitNumber() + " player " + kit.getOwner() + " affected 0 rows unexpectedly.");
                  }
@@ -283,7 +283,7 @@ public class MySQLStorageHandler implements StorageHandler {
     @Override
     public CompletableFuture<Void> deletePlayerKit(UUID playerUUID, int kitNumber) {
         String sql = "DELETE FROM " + playerKitsTable + " WHERE owner_uuid = ? AND kit_number = ?";
-        return executeUpdateAsync(sql, playerUUID, kitNumber).thenAccept(rows -> {}); // Convert to Void CompletableFuture
+        return executeUpdateAsync(sql, playerUUID, kitNumber).thenAccept(rows -> {}); 
     }
 
     @Override
@@ -293,7 +293,7 @@ public class MySQLStorageHandler implements StorageHandler {
             List<Kit> globalKits = new ArrayList<>();
             while (rs.next()) {
                 try {
-                     UUID ownerUUID = UUID.fromString(rs.getString("owner_uuid")); // Get owner from result set
+                     UUID ownerUUID = UUID.fromString(rs.getString("owner_uuid")); 
                      int kitNumber = rs.getInt("kit_number");
                      String contentsData = rs.getString("contents");
                      String echestData = rs.getString("enderchest_contents");
@@ -307,9 +307,9 @@ public class MySQLStorageHandler implements StorageHandler {
                             .name("Kit " + kitNumber)
                             .contents(contents)
                             .enderChestContents(echestContents)
-                            .global(true) // We queried for global=true
+                            .global(true) 
                             .build());
-                } catch (Exception e) { // Catch deserialization, UUID format etc.
+                } catch (Exception e) { 
                      plugin.getMessageUtil().logException("Failed to deserialize global kit data from DB for kit num " + rs.getInt("kit_number"), e);
                 }
             }
@@ -319,19 +319,19 @@ public class MySQLStorageHandler implements StorageHandler {
 
     @Override
     public CompletableFuture<Void> saveGlobalKit(Kit kit) {
-        // This just calls savePlayerKit, ensuring the 'is_global' flag is set correctly in that method
+        
          if (!kit.isGlobal()) {
               plugin.getMessageUtil().logWarning("saveGlobalKit called with a kit object where isGlobal=false. Kit: " + kit.getOwner() + "_" + kit.getKitNumber());
-             // Ensure it's saved correctly (as non-global)
+             
          }
-         // Ensure kit object is marked global before passing if this method is the definitive 'make global' action
+         
           Kit ensuredGlobalKit = kit.toBuilder().global(true).build();
           return savePlayerKit(ensuredGlobalKit.getOwner(), ensuredGlobalKit);
     }
 
     @Override
     public CompletableFuture<Void> deleteGlobalKit(UUID ownerUUID, int kitNumber) {
-        // Mark the kit as no longer global in the database
+        
         String sql = "UPDATE " + playerKitsTable + " SET is_global = FALSE WHERE owner_uuid = ? AND kit_number = ? AND is_global = TRUE";
          return executeUpdateAsync(sql, ownerUUID, kitNumber).thenAccept(rows -> {
             if (rows == 0) {
@@ -340,7 +340,7 @@ public class MySQLStorageHandler implements StorageHandler {
         });
     }
 
-    // --- Migration Methods (MySQL -> Target) ---
+    
 
     @Override
      public CompletableFuture<Void> migratePlayerData(UUID playerUUID, StorageHandler targetHandler) {
@@ -367,7 +367,7 @@ public class MySQLStorageHandler implements StorageHandler {
           plugin.getMessageUtil().logInfo("Starting full migration from MySQL to " + targetHandler.getClass().getSimpleName() + "...");
           List<CompletableFuture<Void>> allMigrations = new ArrayList<>();
 
-         // 1. Get all distinct player UUIDs with kits
+         
          String selectDistinctPlayersSQL = "SELECT DISTINCT owner_uuid FROM " + playerKitsTable;
          allMigrations.add(
              executeQueryAsync(rs -> {
@@ -391,7 +391,7 @@ public class MySQLStorageHandler implements StorageHandler {
              }, executor)
          );
 
-         // Combine and Finalize
+         
          return CompletableFuture.allOf(allMigrations.toArray(new CompletableFuture[0]))
                   .thenRun(() -> {
                        plugin.getMessageUtil().logInfo("MySQL migration process finished successfully.");
@@ -404,9 +404,9 @@ public class MySQLStorageHandler implements StorageHandler {
      }
 
 
-    // Functional interface for cleaner lambda in executeQueryAsync
+    
     @FunctionalInterface
     interface SQLFunction<T, R> {
-        R apply(T t) throws SQLException, IOException, ClassNotFoundException; // Allow expected exceptions
+        R apply(T t) throws SQLException, IOException, ClassNotFoundException; 
     }
 }

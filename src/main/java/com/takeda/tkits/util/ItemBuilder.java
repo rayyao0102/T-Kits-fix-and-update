@@ -33,11 +33,11 @@ public class ItemBuilder {
 
     public ItemBuilder(Material material, int amount) {
         this.itemStack = new ItemStack(material, amount);
-        this.itemMeta = this.itemStack.getItemMeta(); // Get meta right away
+        this.itemMeta = this.itemStack.getItemMeta(); 
     }
 
     public ItemBuilder(ItemStack itemStack) {
-        this.itemStack = itemStack.clone(); // Work on a clone
+        this.itemStack = itemStack.clone(); 
         this.itemMeta = this.itemStack.getItemMeta();
     }
 
@@ -52,7 +52,7 @@ public class ItemBuilder {
 
     public ItemBuilder name(Component name) {
         if (this.itemMeta != null) {
-             // Default to no italics for builder names unless specified in component
+             
             this.itemMeta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         }
         return this;
@@ -75,7 +75,7 @@ public class ItemBuilder {
     public ItemBuilder loreComponents(List<Component> lore) {
         if (this.itemMeta != null) {
              this.itemMeta.lore(lore == null ? null : lore.stream()
-                .map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)) // No italics default
+                .map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)) 
                 .collect(Collectors.toList()));
         }
         return this;
@@ -87,7 +87,7 @@ public class ItemBuilder {
 
     public ItemBuilder enchant(Enchantment enchantment, int level) {
         if (this.itemMeta != null) {
-            this.itemMeta.addEnchant(enchantment, level, true); // Ignore level restriction true
+            this.itemMeta.addEnchant(enchantment, level, true); 
         }
         return this;
     }
@@ -115,7 +115,7 @@ public class ItemBuilder {
 
     public ItemBuilder modelData(int customModelData) {
         if (this.itemMeta != null) {
-            this.itemMeta.setCustomModelData(customModelData > 0 ? customModelData : null); // Set to null if 0 or less
+            this.itemMeta.setCustomModelData(customModelData > 0 ? customModelData : null); 
         }
         return this;
     }
@@ -137,9 +137,9 @@ public class ItemBuilder {
     public ItemBuilder skullOwner(String ownerName) {
          if (this.itemMeta instanceof SkullMeta) {
              try {
-                  // Note: setOwner is deprecated, use setOwningPlayer with OfflinePlayer object for better results
-                  // SkullMeta skullMeta = (SkullMeta) this.itemMeta;
-                  // skullMeta.setOwner(ownerName); // Deprecated method
+                  
+                  
+                  
              } catch (Exception ignored) { /* Handle potential errors */ }
          }
          return this;

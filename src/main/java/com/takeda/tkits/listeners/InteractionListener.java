@@ -6,11 +6,11 @@ import com.takeda.tkits.services.CooldownService;
 import com.takeda.tkits.services.UtilityService;
 import com.takeda.tkits.util.GuiUtils;
 import com.takeda.tkits.util.MessageUtil;
-import java.util.List; // Keep List import
+import java.util.List; 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter; // Added Lombok Getter annotation for holder
+import lombok.Getter; 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -28,11 +28,11 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder; // Import InventoryHolder
+import org.bukkit.inventory.InventoryHolder; 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue; // Import MetadataValue
+import org.bukkit.metadata.MetadataValue; 
 import org.bukkit.persistence.PersistentDataType;
 
 public class InteractionListener implements Listener {
@@ -92,8 +92,8 @@ public class InteractionListener implements Listener {
             }
 
             Location loc = blockPlaced.getLocation();
-            // Optional: Check if player already has a box placed? Limit to one?
-            // if (findPlacedRegearBox(player.getUniqueId()) != null) { ... }
+            
+            
 
             placedRegearBoxes.put(loc, player.getUniqueId());
             blockPlaced.setMetadata(
@@ -101,8 +101,8 @@ public class InteractionListener implements Listener {
                 new FixedMetadataValue(plugin, player.getUniqueId().toString())
             );
 
-            // Use action bar for placement confirmation
-            msg.sendActionBar(player, "regear_shulker_given"); // Re-use existing message key
+            
+            msg.sendActionBar(player, "regear_shulker_given"); 
         }
     }
 
@@ -115,7 +115,7 @@ public class InteractionListener implements Listener {
             !clickedBlock.getType().name().contains("SHULKER_BOX")
         ) return;
 
-        // Check metadata *first* before map, as map might be cleared but metadata remains temporarily
+        
         String ownerUUIDStr = null;
         List<MetadataValue> metaValues = clickedBlock.getMetadata(
             "tkits_regear_owner"
@@ -124,9 +124,9 @@ public class InteractionListener implements Listener {
             ownerUUIDStr = metaValues.get(0).asString();
         }
 
-        // If metadata exists, this is likely our box, proceed with checks
+        
         if (ownerUUIDStr != null) {
-            event.setCancelled(true); // Prevent default open only if it's confirmed our box
+            event.setCancelled(true); 
 
             Player player = event.getPlayer();
             Location loc = clickedBlock.getLocation();
@@ -136,17 +136,17 @@ public class InteractionListener implements Listener {
                 if (!player.getUniqueId().equals(ownerUUID)) {
                     msg.sendMessage(player, "not_your_regear_box");
                     msg.playSound(player, "error");
-                    return; // Don't proceed
+                    return; 
                 }
-                // Verify it's still tracked in our map for extra safety?
-                // if (!placedRegearBoxes.containsKey(loc) || !placedRegearBoxes.get(loc).equals(ownerUUID)) { ... }
+                
+                
 
             } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
                 msg.logWarning(
                     "Failed to parse owner UUID metadata from placed regear box at " +
                     loc
                 );
-                removeBox(loc); // Clean up box with bad state
+                removeBox(loc); 
                 return;
             }
 
@@ -169,14 +169,14 @@ public class InteractionListener implements Listener {
 
             Kit lastKit = plugin.getKitManager().getLastLoadedKit(player);
             if (lastKit == null) {
-                msg.playSound(player, "error"); // Message already sent by kit manager
+                msg.playSound(player, "error"); 
                 removeBox(loc);
                 return;
             }
 
             openRegearShellInventory(player, lastKit);
         }
-        // If no metadata, it's a normal shulker, do nothing, allow default action.
+        
     }
 
     private void openRegearShellInventory(Player player, Kit lastKit) {
@@ -196,7 +196,7 @@ public class InteractionListener implements Listener {
             title
         );
 
-        // Create the regear button
+        
         ItemStack shell = GuiUtils.createGuiItem(
             Material.SHULKER_SHELL,
             msg.deserialize("&a<0xF0><0x9F><0xAA><0xA6> Rᴇɢᴇᴀʀ Nᴏᴡ"),
@@ -214,7 +214,7 @@ public class InteractionListener implements Listener {
             shell.setItemMeta(shellMeta);
         }
 
-        // Use slots 11-17 as originally intended
+        
         for (int slot = 11; slot <= 17; slot++) {
             gui.setItem(slot, shell.clone());
         }
@@ -229,7 +229,7 @@ public class InteractionListener implements Listener {
             event.getPlayer() instanceof Player
         ) {
             Player player = (Player) event.getPlayer();
-            // Schedule removal to prevent conflicts if GUI is reopened immediately etc.
+            
             Bukkit.getScheduler()
                 .runTaskLater(
                     plugin,
@@ -242,7 +242,7 @@ public class InteractionListener implements Listener {
                         }
                     },
                     1L
-                ); // Delay by 1 tick
+                ); 
         }
     }
 
@@ -251,25 +251,25 @@ public class InteractionListener implements Listener {
         Block block = event.getBlock();
         Location loc = block.getLocation();
 
-        // Check both map and metadata
+        
         boolean isOurBox =
             placedRegearBoxes.containsKey(loc) ||
             block.hasMetadata("tkits_regear_owner");
 
         if (isOurBox) {
-            // Prevent players breaking it unless admin?
+            
             if (!event.getPlayer().hasPermission("tkits.admin")) {
                 event.setCancelled(true);
-                // Use raw message here as prefix might be redundant
+                
                 msg.sendRawMessage(
                     event.getPlayer(),
                     "&cCannot break active Regear Boxes.",
                     null
                 );
                 msg.playSound(event.getPlayer(), "error");
-            } else { // Admin is breaking it
-                event.setDropItems(false); // Prevent dropping the custom item
-                removeBox(loc); // Clean up state immediately
+            } else { 
+                event.setDropItems(false); 
+                removeBox(loc); 
                 msg.sendRawMessage(
                     event.getPlayer(),
                     "&aAdmin: Removed placed Regear Box.",
@@ -281,14 +281,14 @@ public class InteractionListener implements Listener {
 
     private void removeBox(Location loc) {
         if (loc == null) return;
-        UUID ownerUUID = placedRegearBoxes.remove(loc); // Remove from tracking map first
+        UUID ownerUUID = placedRegearBoxes.remove(loc); 
         Block block = loc.getBlock();
 
-        if (block.getType().name().contains("SHULKER_BOX")) { // Check block type again before changing
-            // Clean up metadata FIRST, before setting type to AIR
+        if (block.getType().name().contains("SHULKER_BOX")) { 
+            
             block.removeMetadata("tkits_regear_owner", plugin);
             block.removeMetadata("tkits_no_drop", plugin);
-            block.setType(Material.AIR, true); // Set to air, apply physics
+            block.setType(Material.AIR, true); 
         }
         if (ownerUUID != null) plugin
             .getLogger()
@@ -298,11 +298,11 @@ public class InteractionListener implements Listener {
                 " at " +
                 loc.toVector()
             );
-        // Optional sound/effect at location
+        
     }
 
     private Location findPlacedRegearBox(UUID playerUUID) {
-        // Iterate map to find the box location for this specific player
+        
         return placedRegearBoxes
             .entrySet()
             .stream()
@@ -312,7 +312,7 @@ public class InteractionListener implements Listener {
             .orElse(null);
     }
 
-    // Custom Inventory Holder for the Regear GUI
+    
     private static class RegearInventoryHolder implements InventoryHolder {
 
         @Getter
@@ -325,6 +325,6 @@ public class InteractionListener implements Listener {
         @Override
         public Inventory getInventory() {
             return null;
-        } // Temporary holder
+        } 
     }
 }

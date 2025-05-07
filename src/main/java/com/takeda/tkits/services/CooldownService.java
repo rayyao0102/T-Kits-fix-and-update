@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 public class CooldownService {
 
     private final TKits plugin;
-    // Cache: Player UUID -> Type -> Expiry Timestamp (Millis)
+    
     private final Cache<UUID, Cache<CooldownType, Long>> cooldownCache;
 
     private long kitLoadCooldownMillis;
@@ -19,19 +19,19 @@ public class CooldownService {
     private long arrangeCooldownMillis;
 
     public enum CooldownType {
-        KIT_LOAD, REGEAR, ARRANGE // Add more types if needed
+        KIT_LOAD, REGEAR, ARRANGE 
     }
 
     public CooldownService(TKits plugin) {
         this.plugin = plugin;
-        // Inner cache holds cooldowns per player, outer cache manages player entries
+        
         this.cooldownCache = CacheBuilder.newBuilder()
-                .expireAfterAccess(30, TimeUnit.MINUTES) // Expire player entries after inactivity
+                .expireAfterAccess(30, TimeUnit.MINUTES) 
                 .build();
-        loadCooldowns(); // Load initial values
+        loadCooldowns(); 
     }
 
-    // Load cooldown values from config
+    
     public void loadCooldowns() {
          FileConfiguration config = plugin.getConfigManager().getMainConfig();
          kitLoadCooldownMillis = TimeUnit.SECONDS.toMillis(config.getLong("cooldowns.kit_load", 3));
@@ -61,18 +61,18 @@ public class CooldownService {
      */
     public void applyCooldown(UUID playerUUID, CooldownType type) {
          long duration = getCooldownDuration(type);
-         if (duration <= 0) return; // No cooldown set for this type
+         if (duration <= 0) return; 
 
          long expiryTime = System.currentTimeMillis() + duration;
          try {
-             // Get or create the inner cache for the player
+             
               Cache<CooldownType, Long> playerCooldowns = cooldownCache.get(playerUUID, () ->
                   CacheBuilder.newBuilder()
-                       .expireAfterWrite(duration + TimeUnit.SECONDS.toMillis(10), TimeUnit.MILLISECONDS) // Expire specific cooldown entry shortly after duration
+                       .expireAfterWrite(duration + TimeUnit.SECONDS.toMillis(10), TimeUnit.MILLISECONDS) 
                       .build()
               );
              playerCooldowns.put(type, expiryTime);
-         } catch (Exception e) { // Catch ExecutionException from CacheLoader
+         } catch (Exception e) { 
              plugin.getMessageUtil().logException("Error applying cooldown for player " + playerUUID, e);
          }
     }
@@ -86,18 +86,18 @@ public class CooldownService {
     public long getRemainingCooldown(UUID playerUUID, CooldownType type) {
          Cache<CooldownType, Long> playerCooldowns = cooldownCache.getIfPresent(playerUUID);
          if (playerCooldowns == null) {
-             return 0L; // No active cooldowns for this player
+             return 0L; 
          }
 
          Long expiryTime = playerCooldowns.getIfPresent(type);
          if (expiryTime == null) {
-             return 0L; // Not on cooldown for this specific type
+             return 0L; 
          }
 
          long remaining = expiryTime - System.currentTimeMillis();
          if (remaining <= 0) {
-              playerCooldowns.invalidate(type); // Clean up expired entry
-             return 0L; // Cooldown expired
+              playerCooldowns.invalidate(type); 
+             return 0L; 
          }
 
          return remaining;

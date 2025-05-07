@@ -27,12 +27,12 @@ public class TKitsPlaceholderExpansion extends PlaceholderExpansion {
     @Override public boolean canRegister() { return true; }
 
 
-    // Override this if you need async placeholder support (requires PAPI version >= 2.10.0)
-    // Currently PAPI calls onRequest blocking, so keep logic fast. Avoid DB lookups here.
+    
+    
     /* 
     @Override
     public CompletableFuture<String> onRequestAsync(OfflinePlayer player, @NotNull String identifier) {
-        // Implement async logic here if needed
+        
         return CompletableFuture.completedFuture(processRequest(player, identifier));
     }
     */
@@ -40,7 +40,7 @@ public class TKitsPlaceholderExpansion extends PlaceholderExpansion {
     @Override
     @Nullable
     public String onRequest(OfflinePlayer player, @NotNull String identifier) {
-         // If you only use async, return null here and rely on onRequestAsync
+         
         return processRequest(player, identifier);
     }
 
@@ -56,23 +56,23 @@ public class TKitsPlaceholderExpansion extends PlaceholderExpansion {
         PlayerData playerData = null;
         if (onlinePlayer != null) {
             playerData = plugin.getPlayerDataManager().getPlayerData(onlinePlayer);
-            // Don't return "Loading..." - PAPI expects immediate value or null.
-            // If data is null, subsequent checks will handle it.
+            
+            
         }
 
-        // %tkits_last_loaded_kit%
+        
         if (identifier.equalsIgnoreCase("last_loaded_kit")) {
              return (playerData != null && playerData.getLastLoadedKitNumber() > 0)
                  ? String.valueOf(playerData.getLastLoadedKitNumber()) : "None";
         }
 
-        // %tkits_combat_tagged%
+        
         if (identifier.equalsIgnoreCase("combat_tagged")) {
              CombatTagManager ctm = plugin.getCombatTagManager();
              return (onlinePlayer != null && ctm.isTagged(onlinePlayer)) ? "Yes" : "No";
         }
 
-        // %tkits_combat_tag_time%
+        
          if (identifier.equalsIgnoreCase("combat_tag_time")) {
             CombatTagManager ctm = plugin.getCombatTagManager();
             double remainingSeconds = 0.0;
@@ -83,7 +83,7 @@ public class TKitsPlaceholderExpansion extends PlaceholderExpansion {
          }
 
 
-        // Kit-specific placeholders (%tkits_kit_X_exists%, %tkits_kit_X_is_global%)
+        
         if (identifier.startsWith("kit_") && identifier.contains("_")) {
             String[] parts = identifier.split("_", 3);
             if (parts.length == 3) {
@@ -92,25 +92,25 @@ public class TKitsPlaceholderExpansion extends PlaceholderExpansion {
                      String action = parts[2].toLowerCase();
 
                      Kit kit = null;
-                     if (playerData != null) { // Player online, use cache
+                     if (playerData != null) { 
                          kit = playerData.getKit(kitNum);
                      } else {
-                        // Player offline - AVOID BLOCKING LOOKUP HERE.
-                        // Return a default/placeholder value, or null.
-                        // To show offline data, you might need a separate caching system
-                        // or accept that placeholders are limited for offline players.
-                        return "-"; // Return hyphen as placeholder for offline kit data
+                        
+                        
+                        
+                        
+                        return "-"; 
                      }
 
                      switch (action) {
                          case "exists": return (kit != null) ? "Yes" : "No";
                          case "is_global": return (kit != null && kit.isGlobal()) ? "Yes" : "No";
-                         // case "name": return (kit != null) ? kit.getName() : "N/A"; // If kit names become customizable
+                         
                      }
                  } catch (NumberFormatException ignored) { /* Invalid number */ }
             }
         }
 
-        return null; // Placeholder not found
+        return null; 
     }
 }

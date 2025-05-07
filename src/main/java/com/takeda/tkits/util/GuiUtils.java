@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 
 public class GuiUtils {
 
-    // Static serializer instance for efficiency within this utility class
+    
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand().toBuilder().hexColors().build();
 
-    // Optional: Key to mark GUI items persistently if strict checks are ever needed
-    // public static final NamespacedKey GUI_ITEM_TAG = new NamespacedKey(TKits.getInstance(), "gui_item_marker");
+    
+    
 
     /**
      * Creates a basic GUI ItemStack with specified material, name, lore, and optional custom model data.
@@ -36,7 +36,7 @@ public class GuiUtils {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            // Disable italics by default for GUI items
+            
             meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
             if (lore != null && !lore.isEmpty()) {
                 meta.lore(lore.stream()
@@ -46,8 +46,8 @@ public class GuiUtils {
             if (modelData > 0) {
                 meta.setCustomModelData(modelData);
             }
-            // Example persistent tag (uncomment if needed)
-            // meta.getPersistentDataContainer().set(GUI_ITEM_TAG, PersistentDataType.BYTE, (byte) 1);
+            
+            
             item.setItemMeta(meta);
         }
         return item;
@@ -70,11 +70,11 @@ public class GuiUtils {
          return createGuiItem(material, nameComponent, loreComponents, modelData);
      }
 
-     // Overload for convenience without lore or model data
+     
      public static ItemStack createGuiItem(Material material, String legacyName) {
         return createGuiItem(material, legacyName, null, 0);
     }
-     // Overload for convenience without model data
+     
      public static ItemStack createGuiItem(Material material, String legacyName, List<String> legacyLore) {
          return createGuiItem(material, legacyName, legacyLore, 0);
      }
@@ -90,25 +90,25 @@ public class GuiUtils {
      */
      public static ItemStack createPlayerHead(OfflinePlayer owner, Component name, List<Component> lore) {
          ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-         // Ensure owner isn't null to avoid errors
+         
          if (owner == null) {
              TKits.getInstance().getLogger().warning("Attempted to create player head with null owner!");
              ItemMeta meta = item.getItemMeta();
              if(meta != null) meta.displayName(name.colorIfAbsent(NamedTextColor.RED).append(Component.text(" (Error: Null Owner)")));
              item.setItemMeta(meta);
-             return item; // Return head with error name or just a default skull?
+             return item; 
          }
 
          SkullMeta meta = (SkullMeta) item.getItemMeta();
          if (meta != null) {
-             meta.setOwningPlayer(owner); // Use setOwningPlayer for better compatibility
+             meta.setOwningPlayer(owner); 
              meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
              if (lore != null && !lore.isEmpty()) {
                 meta.lore(lore.stream()
                               .map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE))
                               .collect(Collectors.toList()));
              }
-             // meta.getPersistentDataContainer().set(GUI_ITEM_TAG, PersistentDataType.BYTE, (byte) 1); // Optional Tagging
+             
             item.setItemMeta(meta);
          }
          return item;
@@ -131,14 +131,14 @@ public class GuiUtils {
      * @param fillMaterial The Material to use for the filler item (e.g., GRAY_STAINED_GLASS_PANE). Use AIR or null to disable filling.
      */
      public static void fillBackground(ItemStack[] contents, Material fillMaterial) {
-         if (fillMaterial == null || fillMaterial == Material.AIR || fillMaterial.isLegacy()) { // Check legacy too
+         if (fillMaterial == null || fillMaterial == Material.AIR || fillMaterial.isLegacy()) { 
             return;
          }
-         // Create the filler item once for efficiency
-         ItemStack filler = createGuiItem(fillMaterial, Component.empty(), null, 0); // No name, no lore
+         
+         ItemStack filler = createGuiItem(fillMaterial, Component.empty(), null, 0); 
          for (int i = 0; i < contents.length; i++) {
              if (contents[i] == null || contents[i].getType() == Material.AIR) {
-                 contents[i] = filler.clone(); // Use clone to avoid modifying the original filler object if meta was changed elsewhere
+                 contents[i] = filler.clone(); 
              }
          }
      }

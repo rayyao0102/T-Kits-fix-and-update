@@ -4,8 +4,8 @@ import com.takeda.tkits.TKits;
 import com.takeda.tkits.models.Kit;
 import com.takeda.tkits.models.KitContents;
 import com.takeda.tkits.models.PlayerData;
-import com.takeda.tkits.services.CooldownService; // Import CooldownService
-import com.takeda.tkits.services.UtilityService; // Import UtilityService for applyKitToPlayer internal call
+import com.takeda.tkits.services.CooldownService; 
+import com.takeda.tkits.services.UtilityService; 
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -35,7 +35,7 @@ public class KitManager {
         this.globalKitsCache = new ConcurrentHashMap<>();
     }
 
-    // --- Global Kit Cache Handling ---
+    
 
     public void loadGlobalKitsFromStorage() {
         plugin.getMessageUtil().logInfo("Loading global kits from storage...");
@@ -83,7 +83,7 @@ public class KitManager {
 
 
 
-    // --- Kit Saving/Editing ---
+    
 
     public void saveKit(Player player, int kitNumber, Inventory editorInventory) {
         PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
@@ -100,13 +100,13 @@ public class KitManager {
         playerData.setKit(kitNumber, kitFromEditor);
         plugin.getPlayerDataManager().savePlayerKit(player.getUniqueId(), kitFromEditor)
              .thenRunAsync(() -> {
-                 // Update global cache ONLY IF the saved kit is marked global
+                 
                  if (kitFromEditor.isGlobal()) {
-                      addGlobalKitToCache(kitFromEditor); // Ensure cache reflects saved state if global
+                      addGlobalKitToCache(kitFromEditor); 
                  } else {
-                      // If it WAS global but is now private, remove from cache
-                      // This relies on setKitGlobalStatus handling cache removal for privacy changes.
-                      // But, saving a previously global kit as private should also update cache here.
+                      
+                      
+                      
                       removeGlobalKitFromCache(kitFromEditor.getOwner(), kitFromEditor.getKitNumber());
                  }
                  plugin.getMessageUtil().sendActionBar(player, "kit_saved", "kit_number", String.valueOf(kitNumber));
@@ -114,7 +114,7 @@ public class KitManager {
              }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
              .exceptionally(ex -> {
                   plugin.getMessageUtil().logException("Failed to save kit " + kitNumber + " for player " + player.getUniqueId(), ex);
-                  // Revert memory? Risky, could overwrite newer data. Log and inform player.
+                  
                   plugin.getMessageUtil().sendMessage(player, "error");
                   return null;
               });
@@ -159,7 +159,7 @@ public class KitManager {
              }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
              .exceptionally(ex -> {
                  plugin.getMessageUtil().logException("Failed to save EChest for kit " + kitNumber + " player " + player.getUniqueId(), ex);
-                 playerData.setKit(kitNumber, kit); // Revert memory
+                 playerData.setKit(kitNumber, kit); 
                  plugin.getMessageUtil().sendMessage(player, "error");
                  return null;
               });
@@ -199,7 +199,7 @@ public class KitManager {
     }
 
 
-    // --- Kit Loading ---
+    
 
     public boolean loadKit(Player player, int kitNumber) {
          PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
@@ -288,98 +288,98 @@ public class KitManager {
     private void applyKitToPlayer(Player player, Kit kit) {
         PlayerInventory inv = player.getInventory();
         Inventory enderChest = player.getEnderChest();
-        boolean clearInv = plugin.getConfigManager().isClearInventoryOnLoad(); // Check config setting
+        boolean clearInv = plugin.getConfigManager().isClearInventoryOnLoad(); 
 
-        plugin.getMessageUtil().debug("applyKitToPlayer: Applying kit " + kit.getKitNumber() + " to " + player.getName() + ". Clear inventory: " + clearInv); // DEBUG
+        plugin.getMessageUtil().debug("applyKitToPlayer: Applying kit " + kit.getKitNumber() + " to " + player.getName() + ". Clear inventory: " + clearInv); 
 
-        // --- Clear Inventory / Stats (if configured) ---
+        
         if (clearInv) {
-            plugin.getMessageUtil().debug(" -> Clearing inventory and stats for " + player.getName() + " based on config."); // DEBUG
-            inv.clear(); // Clear main inventory (0-35)
-            inv.setArmorContents(new ItemStack[4]); // Clear armor slots (36-39)
-            inv.setItemInOffHand(null); // Clear offhand slot (40)
-            enderChest.clear(); // Clear Ender Chest
+            plugin.getMessageUtil().debug(" -> Clearing inventory and stats for " + player.getName() + " based on config."); 
+            inv.clear(); 
+            inv.setArmorContents(new ItemStack[4]); 
+            inv.setItemInOffHand(null); 
+            enderChest.clear(); 
 
-            // Clear potion effects
+            
             player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
 
-            // Reset health, food, saturation, xp, level, fire
+            
             try {
-                // Set health to max health attribute
+                
                 player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
             } catch (Exception e) {
-                plugin.getMessageUtil().debug(" -> Error getting max health attribute, defaulting to 20.0"); // DEBUG
-                player.setHealth(20.0); // Fallback if attribute fails
+                plugin.getMessageUtil().debug(" -> Error getting max health attribute, defaulting to 20.0"); 
+                player.setHealth(20.0); 
             }
             player.setFoodLevel(20);
-            player.setSaturation(5.0f); // Default saturation level
+            player.setSaturation(5.0f); 
             player.setExp(0);
             player.setLevel(0);
             player.setFireTicks(0);
         } else {
-            plugin.getMessageUtil().debug(" -> NOT clearing inventory for " + player.getName() + " (clear_inventory_on_load=false). Existing items might be overwritten or remain."); // DEBUG
+            plugin.getMessageUtil().debug(" -> NOT clearing inventory for " + player.getName() + " (clear_inventory_on_load=false). Existing items might be overwritten or remain."); 
         }
 
-        // --- Apply Main Contents ---
-        // Get kit items, default to empty map if null
+        
+        
         Map<Integer, ItemStack> kitItems = (kit.getContents() != null && kit.getContents().getItems() != null)
                 ? kit.getContents().getItems()
                 : Collections.emptyMap();
 
-        // Iterate ALL relevant player slots (0-40) to ensure consistency
+        
         for (int slot = 0; slot <= 40; slot++) {
-            ItemStack itemFromKit = kitItems.get(slot); // Get the item defined for this slot in the kit
+            ItemStack itemFromKit = kitItems.get(slot); 
 
-            // Check if the kit defines an item for this slot (and it's not AIR)
+            
             if (itemFromKit != null && itemFromKit.getType() != Material.AIR) {
-                // Set the item from the kit (using a clone) into the correct player slot
+                
                 setItemSafe(inv, slot, itemFromKit.clone());
 
-                // Detailed Debug Logging for SET items
+                
                 String metaStr = itemFromKit.hasItemMeta() ? itemFromKit.getItemMeta().toString() : "null";
-                metaStr = metaStr.substring(0, Math.min(metaStr.length(), 100)); // Limit meta string length for logs
+                metaStr = metaStr.substring(0, Math.min(metaStr.length(), 100)); 
                 plugin.getMessageUtil().debug(String.format("applyKitToPlayer: Slot %d SET to KitItem: %s Amount: %d Meta: %s...",
-                                                             slot, itemFromKit.getType(), itemFromKit.getAmount(), metaStr)); // DEBUG
+                                                             slot, itemFromKit.getType(), itemFromKit.getAmount(), metaStr)); 
             } else {
-                // If the kit does *not* define an item for this slot (or it's AIR),
-                // clear the corresponding slot in the player's inventory.
-                // This is crucial to remove leftover items if clearInv=false or if the kit is sparse.
+                
+                
+                
                 clearItemSafe(inv, slot);
-                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: Slot %d CLEARED (kit definition null/AIR)", slot)); // DEBUG
+                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: Slot %d CLEARED (kit definition null/AIR)", slot)); 
             }
         }
 
-        // --- Apply Ender Chest Contents ---
-        // Get Ender Chest items, default to empty map if null
+        
+        
         Map<Integer, ItemStack> echestKitItems = (kit.getEnderChestContents() != null && kit.getEnderChestContents().getItems() != null)
                 ? kit.getEnderChestContents().getItems()
                 : Collections.emptyMap();
 
-        // Iterate ALL ender chest slots
-        for (int slot = 0; slot < enderChest.getSize(); slot++) { // Use enderChest.getSize() (usually 27)
+        
+        for (int slot = 0; slot < enderChest.getSize(); slot++) { 
             ItemStack itemFromKit = echestKitItems.get(slot);
 
-            // Set item from kit (clone) or null if kit doesn't define it for this slot
+            
             enderChest.setItem(slot, (itemFromKit != null && itemFromKit.getType() != Material.AIR) ? itemFromKit.clone() : null);
 
-            // Debug Logging for EChest
+            
             if (itemFromKit == null || itemFromKit.getType() == Material.AIR) {
-                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: EChest Slot %d CLEARED", slot)); // DEBUG
+                plugin.getMessageUtil().debug(String.format("applyKitToPlayer: EChest Slot %d CLEARED", slot)); 
             } else {
                  String metaStr = itemFromKit.hasItemMeta() ? itemFromKit.getItemMeta().toString() : "null";
                  metaStr = metaStr.substring(0, Math.min(metaStr.length(), 100));
                  plugin.getMessageUtil().debug(String.format("applyKitToPlayer: EChest Slot %d SET to KitItem: %s Amount: %d Meta: %s...",
-                                                              slot, itemFromKit.getType(), itemFromKit.getAmount(), metaStr)); // DEBUG
+                                                              slot, itemFromKit.getType(), itemFromKit.getAmount(), metaStr)); 
             }
         }
 
-        // Update the player's inventory view
+        
         player.updateInventory();
-        plugin.getMessageUtil().debug("applyKitToPlayer: Finished applying kit " + kit.getKitNumber() + " to " + player.getName()); // DEBUG
+        plugin.getMessageUtil().debug("applyKitToPlayer: Finished applying kit " + kit.getKitNumber() + " to " + player.getName()); 
     }
 
 
-     // --- Utility Methods ---
+     
 
      public Kit getLastLoadedKit(Player player) {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player);
@@ -390,7 +390,7 @@ public class KitManager {
                  if (kit != null) {
                      return kit;
                  } else {
-                     plugin.getMessageUtil().sendMessage(player, "last_kit_invalid", "kit_number", String.valueOf(lastKitNum)); // Added placeholder
+                     plugin.getMessageUtil().sendMessage(player, "last_kit_invalid", "kit_number", String.valueOf(lastKitNum)); 
                      data.setLastLoadedKitNumber(-1);
                  }
              }
@@ -483,10 +483,10 @@ public class KitManager {
          return -1;
     }
 
-    // Helper to safely set items in player inventory, handling armor/offhand slots
+    
     private void setItemSafe(PlayerInventory inv, int slot, ItemStack item) {
         if (slot < 0 || slot > 40) return;
-        ItemStack itemToSet = (item == null || item.getType() == Material.AIR) ? null : item; // Use null for AIR/null
+        ItemStack itemToSet = (item == null || item.getType() == Material.AIR) ? null : item; 
 
         switch (slot) {
             case 36: inv.setBoots(itemToSet); break;
@@ -498,9 +498,9 @@ public class KitManager {
         }
     }
 
-    // Helper to safely clear items from specific slots
+    
     private void clearItemSafe(PlayerInventory inv, int slot) {
         setItemSafe(inv, slot, null);
     }
 }
-// ========== END COMPLETE REVISED KitManager.java ==========
+

@@ -29,7 +29,7 @@ public class KitCommand extends BaseCommand {
     @CommandPermission("tkits.use")
     @Description("Opens the main kit selection GUI.")
     public void onKitCommand(Player player) {
-        // PlayerListener handles loading data, but quick check doesn't hurt
+        
         if (plugin.getPlayerDataManager().getPlayerData(player) == null) {
             msg.sendMessage(player, "data_loading_please_wait");
             return;
@@ -38,13 +38,13 @@ public class KitCommand extends BaseCommand {
     }
 
     @Subcommand("import")
-    @CommandCompletion("@nothing") // Don't suggest anything for the code
+    @CommandCompletion("@nothing") 
     @Syntax("<code>")
     @Description("Imports a kit using a share code into the first available slot.")
     @CommandPermission("tkits.kit.share")
     public void onKitImport(Player player, String code) {
 
-        // --- Combat Tag Check ---
+        
         if (plugin.getCombatTagManager().isTagged(player)) {
             long remainingMillis = plugin.getCombatTagManager().getRemainingTagTimeMillis(player);
             double remainingSeconds = Math.ceil(remainingMillis / 1000.0);
@@ -53,9 +53,9 @@ public class KitCommand extends BaseCommand {
             return;
         }
 
-        // --- Cooldown Check --- 
-        // Assuming a general 'kit_action' or 'kit_import' cooldown group exists
-        // Use the standard KIT_LOAD cooldown for importing for simplicity
+        
+        
+        
         CooldownService.CooldownType cooldownType = CooldownService.CooldownType.KIT_LOAD; 
 
         long remainingCooldown = plugin.getCooldownService().getRemainingCooldown(player.getUniqueId(), cooldownType);
@@ -66,14 +66,14 @@ public class KitCommand extends BaseCommand {
         }
 
         if (code == null) {
-             // ACF might handle this depending on config, but good practice to check
-             msg.sendMessage(player, "import_fail_invalid_code"); // Use a more specific message? "Code cannot be empty"?
+             
+             msg.sendMessage(player, "import_fail_invalid_code"); 
              msg.playSound(player, "error");
              return;
          }
 
         final int expectedCodeLength = plugin.getConfigManager().getMainConfig().getInt("sharing.code_length", 5);
-         String upperCode = code.trim().toUpperCase(); // Trim whitespace and normalize case
+         String upperCode = code.trim().toUpperCase(); 
 
          if (upperCode.length() != expectedCodeLength) {
              msg.sendMessage(player, "import_fail_invalid_code");
@@ -84,11 +84,11 @@ public class KitCommand extends BaseCommand {
         final int maxKits = plugin.getConfigManager().getMainConfig().getInt("kits.max_kits_per_player", 7);
         final PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player);
         if(playerData == null) {
-             msg.sendMessage(player, "data_loading_please_wait"); // Data still loading?
+             msg.sendMessage(player, "data_loading_please_wait"); 
             return;
         }
 
-        // Find first empty slot
+        
         int targetSlot = -1;
         for (int i = 1; i <= maxKits; i++) {
             if (!playerData.hasKit(i)) {
@@ -104,47 +104,47 @@ public class KitCommand extends BaseCommand {
         }
 
         final int finalTargetSlot = targetSlot;
-        msg.sendActionBar(player, "importing_kit"); // Use action bar
+        msg.sendActionBar(player, "importing_kit"); 
 
          plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Kit importedKit = plugin.getShareCodeManager().redeemShareCode(upperCode);
 
-             plugin.getServer().getScheduler().runTask(plugin, () -> { // Back to main thread
+             plugin.getServer().getScheduler().runTask(plugin, () -> { 
                 if (importedKit != null) {
-                    // Kit needs owner, number, and global status reset for the importer
+                    
                     Kit kitToSave = importedKit.toBuilder()
                          .kitNumber(finalTargetSlot)
                          .owner(player.getUniqueId())
-                         .global(false) // Imports are always private initially
+                         .global(false) 
                          .build();
-                    // Ensure EChest consistency (null safe copy)
+                    
                      kitToSave = kitToSave.toBuilder()
                          .enderChestContents(com.takeda.tkits.models.KitContents.deserialize(com.takeda.tkits.models.KitContents.serialize(importedKit.getEnderChestContents())))
                          .build();
 
                     playerData.setKit(finalTargetSlot, kitToSave);
                     plugin.getPlayerDataManager().savePlayerKit(player.getUniqueId(), kitToSave)
-                         .thenRun(() -> { // Only message success after save completes
-                             msg.sendActionBar(player, "import_success", "kit_number", String.valueOf(finalTargetSlot)); // Use action bar
+                         .thenRun(() -> { 
+                             msg.sendActionBar(player, "import_success", "kit_number", String.valueOf(finalTargetSlot)); 
                              msg.playSound(player, "kit_import_success");
-                             // Set cooldown AFTER successful import
+                             
                              plugin.getCooldownService().applyCooldown(player.getUniqueId(), cooldownType);
-                             // Optional: Open the kit editor for the newly imported kit?
-                             // guiManager.openKitEditor(player, finalTargetSlot);
+                             
+                             
                          })
-                         .exceptionally(ex -> { // Handle potential save errors
+                         .exceptionally(ex -> { 
                               msg.sendMessage(player, "import_fail_error");
                               msg.playSound(player, "error");
                               plugin.getMessageUtil().logException("Error saving imported kit via command", ex);
-                              // Revert memory state if save failed?
+                              
                               playerData.removeKit(finalTargetSlot);
                               return null;
                           });
                 } else {
-                    msg.sendMessage(player, "import_fail_invalid_code"); // Keep error in chat
+                    msg.sendMessage(player, "import_fail_invalid_code"); 
                     msg.playSound(player, "kit_import_fail");
                 }
-            }); // End main thread task
-         }); // End async task
+            }); 
+         }); 
     }
 }

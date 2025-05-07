@@ -22,18 +22,18 @@ public class ConfigManager {
     private FileConfiguration mainConfig;
 
     private File kitroomFile;
-    private FileConfiguration kitroomConfigInternal; // Internal reference to manage saving
+    private FileConfiguration kitroomConfigInternal; 
 
-    private File guiFile; // Added for gui.yml
-    private FileConfiguration guiConfig; // Added for gui.yml
+    private File guiFile; 
+    private FileConfiguration guiConfig; 
 
     private volatile boolean kitroomAdminChanges = false;
 
-    // --- New Config Fields ---
-    // General
+    
+    
     private boolean debugEnabled;
 
-    // Kits
+    
     private boolean clearInventoryOnLoad;
     private boolean loadRequiresEmptyInventory;
     private List<String> preventLoadWorlds;
@@ -43,43 +43,43 @@ public class ConfigManager {
     private boolean clearKitRequiresConfirmation;
     private int maxKitsPerPlayer;
 
-    // Sharing
+    
     private int shareCodeLength;
     private boolean shareCodeOneTimeUse;
     private int shareCodeExpirationMinutes;
     private boolean allowSharingGlobalKits;
 
-    // Combat Tag
+    
     private boolean combatTagEnabled;
     private int combatTagDurationSeconds;
     private List<String> combatTagBlockedCommands;
     private boolean combatTagPreventEnderpearl;
 
-    // Regear
+    
     private Material regearBoxMaterial;
     private String regearBoxName;
 
-    // Arrange
+    
     private String arrangeHandleExtraItems;
 
-    // Kitroom
+    
     private boolean kitroomRequirePerCategoryPermission;
     private int kitroomItemTakeCooldownSeconds;
 
-    // Cooldowns (Example, assumes CooldownService handles loading)
-    // We might store them here too if needed directly
+    
+    
 
-    // Sounds (Example, assumes MessageUtil/other classes handle loading)
-    // We might store them here too if needed directly
+    
+    
 
-    // Messages (Loaded by MessageUtil)
+    
 
-    // Storage (Used during StorageHandler init)
+    
 
     public ConfigManager(TKits plugin) {
         this.plugin = plugin;
         setupFiles();
-        // Initial load on startup
+        
         loadConfigs();
     }
 
@@ -92,29 +92,29 @@ public class ConfigManager {
 
         configFile = new File(plugin.getDataFolder(), "config.yml");
         kitroomFile = new File(plugin.getDataFolder(), "kitroom.yml");
-        guiFile = new File(plugin.getDataFolder(), "gui.yml"); // Added
+        guiFile = new File(plugin.getDataFolder(), "gui.yml"); 
 
         if (!configFile.exists()) {
             plugin.saveResource("config.yml", false);
         }
-        mainConfig = YamlConfiguration.loadConfiguration(configFile); // Load initial
+        mainConfig = YamlConfiguration.loadConfiguration(configFile); 
 
         if (!kitroomFile.exists()) {
              plugin.getLogger().info("kitroom.yml not found, creating default structure (will be populated by KitroomManager).");
-             plugin.saveResource("kitroom.yml", false); // Saves the empty file with comments
+             plugin.saveResource("kitroom.yml", false); 
             kitroomConfigInternal = YamlConfiguration.loadConfiguration(kitroomFile);
-            // Don't create default structure here, let KitroomManager handle it on first load
-            saveKitroomConfig(); // Save the initially empty file structure if needed
+            
+            saveKitroomConfig(); 
         } else {
             kitroomConfigInternal = YamlConfiguration.loadConfiguration(kitroomFile);
         }
 
-        // Added gui.yml handling
+        
         if (!guiFile.exists()) {
             plugin.getLogger().info("gui.yml not found, creating default structure.");
             plugin.saveResource("gui.yml", false);
         }
-        guiConfig = YamlConfiguration.loadConfiguration(guiFile); // Load initial gui config
+        guiConfig = YamlConfiguration.loadConfiguration(guiFile); 
 
     }
 
@@ -122,13 +122,13 @@ public class ConfigManager {
         try {
             mainConfig = YamlConfiguration.loadConfiguration(configFile);
             kitroomConfigInternal = YamlConfiguration.loadConfiguration(kitroomFile);
-            guiConfig = YamlConfiguration.loadConfiguration(guiFile); // Load gui.yml
+            guiConfig = YamlConfiguration.loadConfiguration(guiFile); 
             kitroomAdminChanges = false;
 
-            // --- Load values from mainConfig ---
+            
             debugEnabled = mainConfig.getBoolean("debug", false);
 
-            // Kits
+            
             maxKitsPerPlayer = mainConfig.getInt("kits.max_kits_per_player", 7);
             saveOnEditorClose = mainConfig.getBoolean("kits.save_on_editor_close", true);
             clearKitRequiresConfirmation = mainConfig.getBoolean("kits.clear_kit_requires_confirmation", true);
@@ -148,21 +148,21 @@ public class ConfigManager {
                     .filter(java.util.Objects::nonNull)
                     .collect(Collectors.toSet());
 
-            // Sharing
+            
             shareCodeLength = mainConfig.getInt("sharing.code_length", 5);
             shareCodeOneTimeUse = mainConfig.getBoolean("sharing.code_one_time_use", true);
             shareCodeExpirationMinutes = mainConfig.getInt("sharing.code_expiration_minutes", 5);
             allowSharingGlobalKits = mainConfig.getBoolean("sharing.allow_sharing_global_kits", true);
 
-            // Combat Tag
+            
             combatTagEnabled = mainConfig.getBoolean("combat_tag.enabled", true);
             combatTagDurationSeconds = mainConfig.getInt("combat_tag.duration_seconds", 10);
             combatTagBlockedCommands = mainConfig.getStringList("combat_tag.blocked_commands").stream()
-                                                .map(String::toLowerCase) // Ensure lowercase for matching
+                                                .map(String::toLowerCase) 
                                                 .collect(Collectors.toList());
             combatTagPreventEnderpearl = mainConfig.getBoolean("combat_tag.prevent_enderpearl", false);
 
-            // Regear
+            
             String regearMatName = mainConfig.getString("regear.box_material", "SHULKER_BOX");
             try {
                 regearBoxMaterial = Material.valueOf(regearMatName.toUpperCase());
@@ -172,35 +172,35 @@ public class ConfigManager {
             }
             regearBoxName = mainConfig.getString("regear.box_name", "&aRegear Box for {player}");
 
-            // Arrange
+            
             arrangeHandleExtraItems = mainConfig.getString("arrange.handle_extra_items", "KEEP").toUpperCase();
 
-            // Kitroom
+            
             kitroomRequirePerCategoryPermission = mainConfig.getBoolean("kitroom.require_per_category_permission", false);
             kitroomItemTakeCooldownSeconds = mainConfig.getInt("kitroom.item_take_cooldown_seconds", 0);
 
             plugin.getLogger().info("Configurations loaded/reloaded. Debug mode: " + (debugEnabled ? "ENABLED" : "DISABLED"));
 
-        } catch (Exception e) { // Catch broader exceptions during load
+        } catch (Exception e) { 
             plugin.getLogger().log(Level.SEVERE, "Could not load configuration files!", e);
         }
     }
 
     public synchronized FileConfiguration getKitroomConfig() {
-         // Return a new instance loaded from file to ensure it's fresh, but manage writes via internal ref
+         
          return YamlConfiguration.loadConfiguration(kitroomFile);
     }
 
      public synchronized FileConfiguration getInternalKitroomConfigForEdit() {
-         // Method used by KitroomManager to get the reference it should modify before saving
+         
          return kitroomConfigInternal;
      }
 
-     // Added getter for gui.yml
+     
      public synchronized FileConfiguration getGuiConfig() {
-         // Return the loaded instance, assuming reloads happen via loadConfigs()
+         
          if (guiConfig == null) {
-             // Attempt to load if null, though this shouldn't happen after init
+             
              guiConfig = YamlConfiguration.loadConfiguration(guiFile);
          }
          return guiConfig;
@@ -216,9 +216,9 @@ public class ConfigManager {
 
     public synchronized void saveKitroomConfig() {
         try {
-            // Ensure internal reference is saved to file
+            
             kitroomConfigInternal.save(kitroomFile);
-            kitroomAdminChanges = false; // Reset flag after successful save
+            kitroomAdminChanges = false; 
             plugin.getLogger().info("Kitroom layout saved to kitroom.yml.");
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Could not save kitroom.yml!", e);

@@ -1,8 +1,8 @@
-// ========== JAVA FILE: com/takeda/tkits/api/TKitsAPI.java ==========
+
 package com.takeda.tkits.api;
 
 import com.takeda.tkits.models.Kit;
-import net.kyori.adventure.text.Component; // Added for GUI Title
+import net.kyori.adventure.text.Component; 
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * RegisteredServiceProvider<TKitsAPI> provider = Bukkit.getServicesManager().getRegistration(TKitsAPI.class);
  * if (provider != null) {
  *     TKitsAPI api = provider.getProvider();
- *     // Use the API
+ *     
  * }
  * }</pre>
  */
@@ -149,7 +149,7 @@ public interface TKitsAPI {
          */
         boolean performArrange(Player player);
 
-    // --- NEW API METHODS ---
+    
 
     /**
      * Gets the Kit object corresponding to the kit number the player last loaded

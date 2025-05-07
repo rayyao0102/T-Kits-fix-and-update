@@ -150,7 +150,7 @@ items:
         - "&7only you can load it."
       slot: 51
 
-  enderchest_editor: # Corrected spelling from echest_editor
+  enderchest_editor:
     filler:
       material: BLACK_STAINED_GLASS_PANE
       name: "&r"
@@ -268,7 +268,7 @@ items:
         name: "&9🛡 &bArmor"
         lore:
           - "&7Armor pieces and shields"
-      sword: # Changed from 'weapons' key to 'sword' to match default KitroomManager list
+      sword:
         slot: 11
         material: DIAMOND_SWORD
         name: "&c⚔ &bWeapons"
@@ -300,7 +300,7 @@ items:
           - "&7Miscellaneous items"
 
   kitroom_category:
-    filler: # Item/Button area filler definition was missing
+    filler: 
       material: BLACK_STAINED_GLASS_PANE
       name: "&r"
     back_button:
@@ -308,7 +308,7 @@ items:
       name: "&c◀ &fBack"
       lore:
         - "&7Return to Category Selection."
-      slot: 49 # Default slot if not specified elsewhere
+      slot: 49
     save_button: # Only shown to admins
       material: WRITABLE_BOOK
       name: "&a💾 &fSave Category"
@@ -318,13 +318,13 @@ items:
         - "&cRequires admin permission."
       slot: 53 # Default slot
 
-  # Added section for Personal Kit Choice GUI
+  #Personal kit choice section (Useful if any external plugin is using its API)
   personal_kit_choice:
     filler:
       material: GRAY_STAINED_GLASS_PANE
       name: "&r"
     kit_item:
-      material: CHEST # Or maybe BOOK? CHEST is fine.
+      material: CHEST
       name: "&bKit {kit_number}"
       lore:
         - "&7Click to select this kit."

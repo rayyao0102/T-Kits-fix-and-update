@@ -18,7 +18,7 @@ public class UtilityService {
             Material.EXPERIENCE_BOTTLE, Material.ARROW, Material.SPECTRAL_ARROW,
             Material.END_CRYSTAL, Material.OBSIDIAN, Material.ENDER_PEARL,
             Material.GLOWSTONE, Material.GOLDEN_APPLE, Material.ENCHANTED_GOLDEN_APPLE,
-            Material.RESPAWN_ANCHOR, // Common CPvP items
+            Material.RESPAWN_ANCHOR, 
             Material.CHORUS_FRUIT, Material.TNT
     );
 
@@ -43,25 +43,25 @@ public class UtilityService {
              ItemStack kitItem = kitItemsMap.get(i);
 
              if (kitItem == null || kitItem.getType() == Material.AIR) {
-                 continue; // Kit doesn't define this slot
+                 continue; 
              }
 
              if (currentItem == null || currentItem.getType() == Material.AIR) {
-                 itemsToAddLater.add(kitItem.clone()); // Player slot is empty, add kit item later
+                 itemsToAddLater.add(kitItem.clone()); 
                  needsUpdate = true;
                  continue;
              }
 
             if (isSameItemTypeAndMeta(currentItem, kitItem)) {
                  boolean itemChanged = false;
-                 // Handle refillable stack sizes
+                 
                  if (REFILLABLE_MATERIALS.contains(currentItem.getType())) {
                      if (currentItem.getAmount() < kitItem.getAmount()) {
                          currentItem.setAmount(kitItem.getAmount());
                          itemChanged = true;
                      }
                  }
-                 // Handle item durability repair
+                 
                  else if (currentItem.getItemMeta() instanceof Damageable) {
                      Damageable currentDamageable = (Damageable) currentItem.getItemMeta();
                       if (currentDamageable.hasDamage()) {
@@ -70,23 +70,23 @@ public class UtilityService {
                          itemChanged = true;
                       }
                  }
-                  // Handle other stackable items (e.g., basic blocks not in refill list, potions)
+                  
                   else if (currentItem.getType().getMaxStackSize() > 1 && currentItem.getAmount() < kitItem.getAmount()) {
-                      // For non-refillable stackables, only increase amount if lower, don't decrease
-                      // We rely on kitItem amount being the desired 'max' for this slot
+                      
+                      
                        currentItem.setAmount(kitItem.getAmount());
                       itemChanged = true;
                   }
                   if (itemChanged) needsUpdate = true;
 
             } else {
-                 // Items are different. Add the required kit item to be placed later if possible.
+                 
                  itemsToAddLater.add(kitItem.clone());
                  needsUpdate = true;
             }
         }
 
-        // Add missing items if any
+        
          if (!itemsToAddLater.isEmpty()) {
             Map<Integer, ItemStack> couldNotFit = inv.addItem(itemsToAddLater.toArray(new ItemStack[0]));
             if (!couldNotFit.isEmpty()) {
@@ -98,7 +98,7 @@ public class UtilityService {
          if(needsUpdate) {
              player.updateInventory();
          }
-        // Success message usually handled by caller (InteractionListener)
+        
         return true;
     }
 
@@ -113,29 +113,29 @@ public class UtilityService {
         Map<Integer, ItemStack> kitLayoutMap = kit.getContents().getItems();
         List<ItemStack> currentItems = new ArrayList<>();
 
-        // --- Step 1: Store current and clear inventory ---
-        // Store armor separately to handle later
-        ItemStack[] currentArmor = inv.getArmorContents().clone(); // Clone for safety
+        
+        
+        ItemStack[] currentArmor = inv.getArmorContents().clone(); 
         ItemStack currentOffhand = inv.getItemInOffHand() == null ? null : inv.getItemInOffHand().clone();
 
         for (int i = 0; i < 36; i++) {
              ItemStack item = inv.getItem(i);
              if (item != null && item.getType() != Material.AIR) {
-                currentItems.add(item.clone()); // Store clones
+                currentItems.add(item.clone()); 
             }
-            inv.clear(i); // Clear slot
+            inv.clear(i); 
         }
-         inv.setArmorContents(new ItemStack[4]); // Clear armor slots in inventory object
-         inv.setItemInOffHand(null);              // Clear offhand
+         inv.setArmorContents(new ItemStack[4]); 
+         inv.setItemInOffHand(null);              
 
-         // Add armor/offhand to the list for potential rearrangement if they match layout
+         
           Arrays.stream(currentArmor).filter(Objects::nonNull).forEach(currentItems::add);
          if(currentOffhand != null) currentItems.add(currentOffhand);
 
-        // --- Step 2: Place items according to kit layout ---
-        List<ItemStack> remainingItems = new LinkedList<>(currentItems); // Use LinkedList for efficient removal
+        
+        List<ItemStack> remainingItems = new LinkedList<>(currentItems); 
 
-        // Sort kit slots to process main inventory, then armor, then offhand
+        
         List<Integer> sortedSlots = kitLayoutMap.keySet().stream().sorted().collect(Collectors.toList());
 
         for (int targetSlot : sortedSlots) {
@@ -146,19 +146,19 @@ public class UtilityService {
              ListIterator<ItemStack> iter = remainingItems.listIterator();
              while (iter.hasNext()) {
                  ItemStack current = iter.next();
-                 if (isSameItemTypeAndMeta(current, kitItemTemplate)) { // Find a matching item
+                 if (isSameItemTypeAndMeta(current, kitItemTemplate)) { 
                      itemToPlace = current;
-                     iter.remove(); // Remove from remaining list
+                     iter.remove(); 
                      break;
                  }
              }
 
             if (itemToPlace != null) {
-                setItemSafe(inv, targetSlot, itemToPlace); // Place found item in target slot
+                setItemSafe(inv, targetSlot, itemToPlace); 
              }
         }
 
-        // --- Step 3: Add remaining items back ---
+        
         if (!remainingItems.isEmpty()) {
              Map<Integer, ItemStack> couldNotFit = inv.addItem(remainingItems.toArray(new ItemStack[0]));
 
@@ -170,7 +170,7 @@ public class UtilityService {
                          couldNotFit.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
                         break;
                     case "MOVE_EMPTY":
-                        // Try to move to first available empty slot, drop if still no space
+                        
                          List<ItemStack> stillCannotFit = new ArrayList<>();
                          for (ItemStack itemToMove : couldNotFit.values()) {
                              int firstEmpty = inv.firstEmpty();
@@ -181,15 +181,15 @@ public class UtilityService {
                              }
                          }
                          if (!stillCannotFit.isEmpty()) {
-                             plugin.getMessageUtil().sendMessage(player, "inventory_full_items_dropped_arrange"); // Still need drop message
+                             plugin.getMessageUtil().sendMessage(player, "inventory_full_items_dropped_arrange"); 
                              stillCannotFit.forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
                          }
                         break;
-                    case "KEEP": // Default behaviour: Do nothing, items remain in their slots if possible
+                    case "KEEP": 
                     default:
-                        // If KEEP mode, the `addItem` already put them back if possible.
-                        // If it failed, they are already in the couldNotFit map but we don't drop them.
-                         plugin.getMessageUtil().sendMessage(player, "inventory_arrange_kept_extras"); // Add a message indicating extras were kept/ignored
+                        
+                        
+                         plugin.getMessageUtil().sendMessage(player, "inventory_arrange_kept_extras"); 
                         break;
                 }
              }
@@ -211,21 +211,21 @@ public class UtilityService {
      * @return True if considered similar enough, false otherwise.
      */
      private boolean isSameItemTypeAndMeta(ItemStack item1, ItemStack item2) {
-         if (item1 == null || item2 == null) return item1 == item2; // Both null are same, one null isn't
-         // Basic Bukkit check is a good start, may need refinement for specific cases like potions later
+         if (item1 == null || item2 == null) return item1 == item2; 
+         
          return item1.isSimilar(item2);
          /* Example stricter check (ignoring amount for type matching):
          if (item1.getType() != item2.getType()) return false;
          ItemMeta meta1 = item1.getItemMeta();
          ItemMeta meta2 = item2.getItemMeta();
-         if (meta1 == null && meta2 == null) return true; // Both null meta is similar type-wise
-         if (meta1 == null || meta2 == null) return false; // One null meta isn't similar
-         // Add checks for name, lore, enchants, potion data, NBT tags etc. as needed
-         return meta1.equals(meta2); // Default ItemMeta.equals comparison
+         if (meta1 == null && meta2 == null) return true; 
+         if (meta1 == null || meta2 == null) return false; 
+         
+         return meta1.equals(meta2); 
          */
      }
 
-      // Helper method (copied from KitManager/original spot)
+      
      private void setItemSafe(PlayerInventory inv, int slot, ItemStack item) {
         if (item == null || slot < 0 || slot > 40) return;
         switch (slot) {

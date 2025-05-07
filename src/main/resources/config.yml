@@ -228,5 +228,5 @@ messages:
   kitroom_item_given: "&a&l✔ &fReceived &b{amount}x {item_name}&f."
   kitroom_on_cooldown: "&b&l⏳ &fKitroom Cooldown! &7Please wait &e{time}s&7."
   no_permission_category: "&c&l✖ &fYou don't have permission for the &e{category}&f kitroom category."
-  no_kits_to_choose: "&e&lℹ &fYou don't have any kits saved to choose from." # Added for kit choice API
-  already_choosing_kit: "&e&l⚠ &fYou are already in the process of choosing a kit." # Added for kit choice API
+  no_kits_to_choose: "&e&lℹ &fYou don't have any kits saved to choose from."
+  already_choosing_kit: "&e&l⚠ &fYou are already in the process of choosing a kit."

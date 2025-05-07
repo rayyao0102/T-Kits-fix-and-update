@@ -1,14 +1,13 @@
-// ========== JAVA FILE: com/takeda/tkits/util/MessageUtil.java ==========
+
 package com.takeda.tkits.util;
 
 import com.takeda.tkits.TKits;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer; // Import added
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer; 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -24,21 +23,21 @@ public class MessageUtil {
     private final TKits plugin;
     private String prefix;
     private final LegacyComponentSerializer legacySerializer;
-    private final PlainTextComponentSerializer plainTextSerializer; // Added instance
-    private final Map<String, String> messageCache; // Cache messages from config
+    private final PlainTextComponentSerializer plainTextSerializer; 
+    private final Map<String, String> messageCache; 
 
     public MessageUtil(TKits plugin) {
         this.plugin = plugin;
         this.legacySerializer = LegacyComponentSerializer.builder()
                 .character('&')
                 .hexColors()
-                .useUnusualXRepeatedCharacterHexFormat() // Support for <#RRGGBB>
+                .useUnusualXRepeatedCharacterHexFormat() 
                 .extractUrls()
                 .build();
-        this.plainTextSerializer = PlainTextComponentSerializer.plainText(); // Initialize plain text serializer
+        this.plainTextSerializer = PlainTextComponentSerializer.plainText(); 
         this.messageCache = new HashMap<>();
-        reloadMessages(); // Load messages initially
-        reloadPrefix(); // Load prefix initially
+        reloadMessages(); 
+        reloadPrefix(); 
     }
 
      public void reloadMessages() {
@@ -52,30 +51,30 @@ public class MessageUtil {
      }
 
      public void reloadPrefix() {
-          this.prefix = plugin.getConfigManager().getMainConfig().getString("messages.prefix", "&8[&bT&3-&bKits&8] &7"); // Updated default prefix
+          this.prefix = plugin.getConfigManager().getMainConfig().getString("messages.prefix", "&8[&bT&3-&bKits&8] &7"); 
           plugin.getLogger().fine("Plugin prefix reloaded.");
      }
 
     public Component deserialize(String text) {
-         return deserialize(text, null); // Deserialize without player context
+         return deserialize(text, null); 
     }
 
     public Component deserialize(String text, Player player) {
          if (text == null || text.isEmpty()) {
             return Component.empty();
         }
-        // Apply PAPI placeholders first if player context is available
-         String CCText = ChatColor.translateAlternateColorCodes('&', text); // Apply legacy codes first
+        
+         String CCText = ChatColor.translateAlternateColorCodes('&', text); 
          String papiApplied = (player != null && Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI"))
                             ? PlaceholderAPI.setPlaceholders(player, CCText)
                             : CCText;
 
-        // Use the legacy serializer for consistent '&' code handling
+        
          return legacySerializer.deserialize(papiApplied)
-                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE); // Ensure italics are off by default unless specified
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE); 
     }
 
-     // Get raw message string from cache
+     
      public String getRawMessage(String key, String defaultValue) {
          return messageCache.getOrDefault(key, defaultValue);
      }
@@ -88,7 +87,7 @@ public class MessageUtil {
              return;
          }
           if(messageFormat.trim().isEmpty()) {
-              return; // Don't send empty messages
+              return; 
           }
 
          String message = prefix + replacePlaceholders(messageFormat, replacements);
@@ -97,7 +96,7 @@ public class MessageUtil {
          if (sender instanceof Player) {
              component = deserialize(message, (Player) sender);
          } else {
-              component = deserialize(message); // Deserialize for console without PAPI
+              component = deserialize(message); 
          }
          sendComponent(sender, component);
     }
@@ -106,7 +105,7 @@ public class MessageUtil {
          String messageFormat = messageCache.get(messageKey);
          if (messageFormat == null || messageFormat.trim().isEmpty()) {
               if (messageFormat == null) plugin.getLogger().warning("Missing action bar message key: messages." + messageKey);
-             return; // Don't send empty or missing messages
+             return; 
          }
          String message = replacePlaceholders(messageFormat, replacements);
          Component component = deserialize(message, player);
@@ -121,7 +120,7 @@ public class MessageUtil {
 
      public void sendComponent(CommandSender sender, Component component) {
          if (component == null || PlainTextComponentSerializer.plainText().serialize(component).isEmpty()) {
-            return; // Avoid sending empty components
+            return; 
          }
          sender.sendMessage(component);
      }
@@ -148,13 +147,13 @@ public class MessageUtil {
             return message;
         }
         for (int i = 0; i < replacements.length; i += 2) {
-             if (replacements[i] == null || replacements[i+1] == null) continue; // Avoid NPE
+             if (replacements[i] == null || replacements[i+1] == null) continue; 
             message = message.replace("{" + replacements[i] + "}", replacements[i+1]);
         }
         return message;
     }
 
-     // Helper for getting legacy colored string (e.g., for Anvil GUI titles)
+     
      public String getLegacyColorized(String text) {
          return ChatColor.translateAlternateColorCodes('&', text);
      }
@@ -162,7 +161,7 @@ public class MessageUtil {
           return legacySerializer.serialize(component);
       }
 
-     // Helper for stripping color codes using plain text serializer
+     
       public String stripColors(String text) {
           return plainTextSerializer.serialize(legacySerializer.deserialize(text));
       }
@@ -171,7 +170,7 @@ public class MessageUtil {
      }
 
 
-     // Centralized logging methods
+     
      public void logInfo(String message) {
          plugin.getLogger().info(stripColors(prefix) + message);
      }
@@ -185,19 +184,19 @@ public class MessageUtil {
            plugin.getLogger().log(Level.SEVERE, stripColors(prefix) + message, throwable);
       }
 
-     // Debug Logging Method
+     
      public void debug(String message) {
          if (!plugin.getConfigManager().isDebugEnabled()) return;
          plugin.getLogger().info("[DEBUG] " + stripColors(prefix) + message);
      }
 
-     // Getter for the legacy serializer
+     
      public LegacyComponentSerializer getLegacySerializer() {
           return legacySerializer;
      }
 
-     // --- ADDED GETTER ---
-     // Getter for the plain text serializer needed by GuiListener
+     
+     
      public PlainTextComponentSerializer getPlainTextSerializer() {
          return plainTextSerializer;
      }
