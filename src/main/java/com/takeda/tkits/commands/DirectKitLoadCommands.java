@@ -69,4 +69,10 @@ public class DirectKitLoadCommands extends BaseCommand {
 
     @CommandAlias("k7") @Description("Loads Kit 7") @CommandPermission("tkits.load.7") @Default
     public void onKit7(Player player) { attemptLoadKit(player, 7); }
+    
+    @CommandAlias("k8") @Description("Loads Kit 8") @CommandPermission("tkits.load.8") @Default
+    public void onKit7(Player player) { attemptLoadKit(player, 8); }
+
+    @CommandAlias("k9") @Description("Loads Kit 9") @CommandPermission("tkits.load.9") @Default
+    public void onKit7(Player player) { attemptLoadKit(player, 9); }
 }
