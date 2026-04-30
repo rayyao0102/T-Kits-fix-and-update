@@ -885,7 +885,7 @@ public class GuiManager implements InventoryHolder {
                     }, 1L);
                 }
             })
-            .preventClose()
+            // .preventClose()   // <-- REMOVED: allows ESC to close the GUI
             .open(player);
     }
 
@@ -1709,4 +1709,4 @@ public class GuiManager implements InventoryHolder {
         if (metaChanged) item.setItemMeta(meta);
     }
 
-} 
+}
