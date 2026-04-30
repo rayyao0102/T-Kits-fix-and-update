@@ -378,8 +378,8 @@ public class GuiManager implements InventoryHolder {
          ItemStack filler = loadGuiItem("items.main_menu.filler", Material.GRAY_STAINED_GLASS_PANE, "&r", null);
          for (int i = 0; i < 9; i++) gui.setItem(i, filler.clone());
          for (int i = 36; i < 45; i++) gui.setItem(i, filler.clone());
-         int kitButtonSlotStart = 9;
-         int kitButtonSlotEnd = 17;
+         int kitButtonSlotStart = 18;
+         int kitButtonSlotEnd = 26;
          int currentKitSlot = kitButtonSlotStart;
          for (int i = 1; i <= configManager.getMaxKitsPerPlayer(); i++) {
              if (currentKitSlot > kitButtonSlotEnd) break;
