@@ -34,7 +34,7 @@ storage:
 # Kit Management Settings
 #-----------------------------------------
 kits:
-  max_kits_per_player: 7        # Maximum number of kits each player can save
+  max_kits_per_player: 9        # Maximum number of kits each player can save
   save_on_editor_close: true    # Automatically save kits when closing the editor (ESC key, etc.)
   clear_kit_requires_confirmation: true  # Ask for confirmation before clearing a kit
 
