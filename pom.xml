@@ -6,7 +6,7 @@
 
     <groupId>com.takeda</groupId>
     <artifactId>T-Kits</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <packaging>jar</packaging>
 
     <name>T-Kits</name>
