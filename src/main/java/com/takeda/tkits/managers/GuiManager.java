@@ -1431,12 +1431,11 @@ public class GuiManager implements InventoryHolder {
             msg.sendActionBar(player, "clear_confirmation_required", "kit_number", String.valueOf(kitNum)); msg.playSound(player, "error");
             resetGuiCloseMarker(playerUUID);
         } else {
-            confirmClickCooldown.remove(playerUUID);
-            Component title = getGuiTitle("confirmation", "&8[&c!&8] &e&lConfirmation")
-                                .replaceText(cfg -> cfg.matchLiteral("{kit_number}").replacement(String.valueOf(kitNum)));
-            Component confirmText = msg.deserialize("&cDelete Kit " + kitNum + " permanently.");
-            Component cancelText = msg.deserialize("&aKeep the kit.");
-            openConfirmationGUI(player, "clear_kit_execute", kitNum, title, confirmText, cancelText); msg.playSound(player, "confirmation_open");
+            confirmClickCooldown.remove(playerUUID); // 清除冷却记录
+            kitManager.clearKit(player, kitNum);
+            msg.sendMessage(player, "kit_cleared", "kit_number", String.valueOf(kitNum));
+            msg.playSound(player, "kit_clear");
+            handleNavigationBack(playerUUID);
         }
     }
 
