@@ -56,6 +56,7 @@ public class GuiManager implements InventoryHolder {
     private final Map<UUID, Integer> playerGlobalKitPages = new ConcurrentHashMap<>();
     private final Map<UUID, Long> confirmClickCooldown = new ConcurrentHashMap<>();
     private final Map<UUID, CompletableFuture<Optional<Kit>>> pendingKitChoices = new ConcurrentHashMap<>(); 
+    private final Map<String, ItemStack> staticItemCache = new ConcurrentHashMap<>();
 
     
     private final Map<UUID, Deque<GuiState>> guiHistory = new ConcurrentHashMap<>();
@@ -102,6 +103,7 @@ public class GuiManager implements InventoryHolder {
     
     public void reloadGuiConfig() {
         this.guiConfig = configManager.getGuiConfig();
+        this.staticItemCache.clear();
         plugin.getLogger().info("Reloading GUI configuration items...");
 
         
@@ -444,7 +446,7 @@ public class GuiManager implements InventoryHolder {
         if (kit != null && kit.getContents() != null) {
             kit.getContents().getItems().forEach((slot, item) -> {
                 int editorSlot = KitManager.mapPlayerInvSlotToEditorSlot(slot);
-                if (editorSlot != -1 && editorSlot <= 40) {
+                if (editorSlot != -1 && editorSlot <= KitManager.MAX_EDITOR_SLOT) {
                     gui.setItem(editorSlot, item.clone());
                 }
             });
@@ -608,7 +610,7 @@ public class GuiManager implements InventoryHolder {
          if (contents != null && contents.getItems() != null) {
              contents.getItems().forEach((slot, item) -> {
                  int editorSlot = KitManager.mapPlayerInvSlotToEditorSlot(slot);
-                 if (editorSlot != -1 && editorSlot <= 40) gui.setItem(editorSlot, item.clone());
+                 if (editorSlot != -1 && editorSlot <= KitManager.MAX_EDITOR_SLOT) gui.setItem(editorSlot, item.clone());
              });
          }
 
@@ -1308,44 +1310,13 @@ public class GuiManager implements InventoryHolder {
     public GuiIdentifier identifyGuiFromHolder(Inventory inventory) {
         try {
             if (inventory == null || !(inventory.getHolder() instanceof GuiManager)) return null;
-            Component actualTitleComponent = null;
-            try {
-                 List<HumanEntity> viewers = inventory.getViewers();
-                 
-                 actualTitleComponent = viewers.isEmpty() ? null : viewers.get(0).getOpenInventory().title();
-            } catch (Exception e) { msg.debug("identifyGuiFromHolder: Could not get title from viewers: " + e.getMessage()); }
-
-            
-            if (actualTitleComponent == null && !inventory.getViewers().isEmpty()) {
+            if (!inventory.getViewers().isEmpty()) {
                  UUID viewerUUID = inventory.getViewers().get(0).getUniqueId();
                  GuiState lastState = peekGuiHistory(viewerUUID);
-                 if(lastState != null) {
-                      msg.debug("identifyGuiFromHolder: Using history identifier as fallback: " + lastState.identifier());
+                 if (lastState != null) {
                       return lastState.identifier();
                  }
             }
-
-            if (actualTitleComponent == null) { msg.debug("identifyGuiFromHolder: Title component was null and no history fallback."); return null; }
-            
-            String actualTitleStripped = plugin.getMessageUtil().stripColors(actualTitleComponent).trim();
-
-            
-            
-            
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("personal_kit_choice", "")).trim())) return GuiIdentifier.PERSONAL_KIT_CHOICE;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kit_editor", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.KIT_EDITOR;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("enderchest_editor", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.ENDERCHEST_EDITOR;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("global_kits", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.GLOBAL_KITS_LIST;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kit_preview", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.KIT_PREVIEW;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("echest_preview", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.ENDERCHEST_PREVIEW;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kitroom_category", "")).split("\\{", 2)[0].trim())) return GuiIdentifier.KITROOM_CATEGORY;
-             
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("kitroom_main", "")).trim())) return GuiIdentifier.KITROOM_MAIN;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("confirmation", "")).trim())) return GuiIdentifier.CONFIRMATION;
-             if (actualTitleStripped.startsWith(plugin.getMessageUtil().stripColors(getGuiTitle("main_menu", "")).trim())) return GuiIdentifier.MAIN_MENU;
-
-
-            msg.debug("identifyGuiFromHolder: Could not match title '" + actualTitleStripped + "' to known GUI types.");
             return null;
         } catch (Exception e) {
              plugin.getMessageUtil().logException("GUI identification failed unexpectedly", e);
@@ -1363,7 +1334,7 @@ public class GuiManager implements InventoryHolder {
 
         msg.debug("createKitFromEditor: Starting snapshot for Kit " + kitNumber + " for player " + player.getName());
 
-        for (int editorSlot = 0; editorSlot <= 40; editorSlot++) {
+        for (int editorSlot = 0; editorSlot <= KitManager.MAX_EDITOR_SLOT; editorSlot++) {
             int playerInvSlot = KitManager.mapEditorSlotToPlayerInvSlot(editorSlot);
             ItemStack item = editorContents[editorSlot];
 
@@ -1405,9 +1376,9 @@ public class GuiManager implements InventoryHolder {
         Inventory editorInv = player.getOpenInventory().getTopInventory();
         if (!isKitEditorInventory(editorInv)) { msg.debug("loadCurrentInventoryToEditor: Aborting, player no longer viewing Kit Editor."); return; }
 
-        for (int i = 0; i < 41; i++) {
+        for (int i = 0; i <= KitManager.MAX_EDITOR_SLOT; i++) {
             int editorSlot = KitManager.mapPlayerInvSlotToEditorSlot(i);
-            if (editorSlot != -1 && editorSlot <= 40) {
+            if (editorSlot != -1 && editorSlot <= KitManager.MAX_EDITOR_SLOT) {
                 ItemStack pItem = pInv.getItem(i);
                 editorInv.setItem(editorSlot, (pItem == null || pItem.getType() == Material.AIR) ? null : pItem.clone());
             }
@@ -1451,7 +1422,7 @@ public class GuiManager implements InventoryHolder {
         if (kitFromEditor == null) { msg.sendMessage(player, "error"); return; }
         boolean repaired = kitManager.repairKitItems(kitFromEditor);
         if (repaired) {
-            for (int editorSlot = 0; editorSlot <= 40; editorSlot++) {
+            for (int editorSlot = 0; editorSlot <= KitManager.MAX_EDITOR_SLOT; editorSlot++) {
                  int playerInvSlot = KitManager.mapEditorSlotToPlayerInvSlot(editorSlot);
                  ItemStack repairedItem = kitFromEditor.getContents().getItems().get(playerInvSlot);
                  editorInv.setItem(editorSlot, (repairedItem != null) ? repairedItem.clone() : null);
@@ -1656,6 +1627,11 @@ public class GuiManager implements InventoryHolder {
     private ItemStack loadGuiItem(String path, Material defaultMat, String defaultName, List<String> defaultLore) { return loadGuiItem(path, defaultMat, defaultName, defaultLore, null); }
 
     private ItemStack loadGuiItem(String path, Material defaultMat, String defaultName, List<String> defaultLore, Map<String, String> placeholders) {
+        if (placeholders == null || placeholders.isEmpty()) {
+            if (staticItemCache.containsKey(path)) {
+                return staticItemCache.get(path).clone();
+            }
+        }
         Material mat = Material.matchMaterial(guiConfig.getString(path + ".material", defaultMat.name()));
         if (mat == null || mat.isLegacy()) mat = defaultMat;
         String name = guiConfig.getString(path + ".name", defaultName);
@@ -1667,7 +1643,11 @@ public class GuiManager implements InventoryHolder {
         List<String> finalLore = lore.stream().map(line -> replacePlaceholders(line, finalPlaceholders)).collect(Collectors.toList());
         Component nameComp = msg.deserialize(finalName);
         List<Component> loreComps = finalLore.stream().map(msg::deserialize).collect(Collectors.toList());
-        return GuiUtils.createGuiItem(mat, nameComp, loreComps, modelData);
+        ItemStack finalItem = GuiUtils.createGuiItem(mat, nameComp, loreComps, modelData);
+        if (placeholders == null || placeholders.isEmpty()) {
+            staticItemCache.put(path, finalItem.clone());
+        }
+        return finalItem;
     }
 
     private String replacePlaceholders(String text, Map<String, String> placeholders) { if (text == null || placeholders == null) return text; for (Map.Entry<String, String> entry : placeholders.entrySet()) { text = text.replace(entry.getKey(), entry.getValue()); } return text; }

@@ -23,6 +23,13 @@ import java.util.stream.Collectors;
 
 public class KitManager {
 
+    public static final int SLOT_BOOTS = 36;
+    public static final int SLOT_LEGGINGS = 37;
+    public static final int SLOT_CHESTPLATE = 38;
+    public static final int SLOT_HELMET = 39;
+    public static final int SLOT_OFFHAND = 40;
+    public static final int MAX_EDITOR_SLOT = SLOT_OFFHAND;
+
     private final TKits plugin;
     private final CooldownService cooldownService;
     private final UtilityService utilityService;
@@ -474,26 +481,26 @@ public class KitManager {
     }
 
     public static int mapEditorSlotToPlayerInvSlot(int editorSlot) {
-         if (editorSlot >= 0 && editorSlot <= 40) return editorSlot;
+         if (editorSlot >= 0 && editorSlot <= MAX_EDITOR_SLOT) return editorSlot;
          return -1;
     }
 
     public static int mapPlayerInvSlotToEditorSlot(int playerInvSlot) {
-        if (playerInvSlot >= 0 && playerInvSlot <= 40) return playerInvSlot;
+        if (playerInvSlot >= 0 && playerInvSlot <= MAX_EDITOR_SLOT) return playerInvSlot;
          return -1;
     }
 
     
     private void setItemSafe(PlayerInventory inv, int slot, ItemStack item) {
-        if (slot < 0 || slot > 40) return;
+        if (slot < 0 || slot > MAX_EDITOR_SLOT) return;
         ItemStack itemToSet = (item == null || item.getType() == Material.AIR) ? null : item; 
 
         switch (slot) {
-            case 36: inv.setBoots(itemToSet); break;
-            case 37: inv.setLeggings(itemToSet); break;
-            case 38: inv.setChestplate(itemToSet); break;
-            case 39: inv.setHelmet(itemToSet); break;
-            case 40: inv.setItemInOffHand(itemToSet); break;
+            case SLOT_BOOTS: inv.setBoots(itemToSet); break;
+            case SLOT_LEGGINGS: inv.setLeggings(itemToSet); break;
+            case SLOT_CHESTPLATE: inv.setChestplate(itemToSet); break;
+            case SLOT_HELMET: inv.setHelmet(itemToSet); break;
+            case SLOT_OFFHAND: inv.setItemInOffHand(itemToSet); break;
             default: inv.setItem(slot, itemToSet); break;
         }
     }

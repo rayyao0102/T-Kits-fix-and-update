@@ -15,6 +15,11 @@ public interface StorageHandler {
     
     CompletableFuture<Map<Integer, Kit>> loadPlayerKits(UUID playerUUID);
     CompletableFuture<Void> savePlayerKit(UUID playerUUID, Kit kit);
+    default CompletableFuture<Void> saveKits(List<Kit> kits) {
+        List<CompletableFuture<Void>> futures = new java.util.ArrayList<>();
+        for (Kit kit : kits) futures.add(savePlayerKit(kit.getOwner(), kit));
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
     CompletableFuture<Void> deletePlayerKit(UUID playerUUID, int kitNumber);
 
     

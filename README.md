@@ -330,8 +330,8 @@ if (provider != null) {
 | # | Issue | File(s) | Impact |
 |---|-------|---------|--------|
 | 11 | ~~**Kitroom items stored as Bukkit `ItemStack` serialization**~~ | `KitroomManager.java` | ✅ **Fixed** - Switched to robust Base64 serialization |
-| 12 | **Magic numbers in GUI slot mapping** | `KitManager.java`, `GuiManager.java` | Armor slot offsets (36–40) are hardcoded. Consider named constants |
-| 13 | **GUI title matching is fragile** | `GuiManager.java:1308-1354` | `identifyGuiFromHolder` matches GUIs by title string comparison. Any title format change breaks identification |
+| 12 | ~~**Magic numbers in GUI slot mapping**~~ | `KitManager.java`, `GuiManager.java` | ✅ **Fixed** - Abstracted out to `KitManager.SLOT_*` constants |
+| 13 | ~~**GUI title matching is fragile**~~ | `GuiManager.java:1308-1354` | ✅ **Fixed** - Refactored to completely rely on robust `GuiState` viewer history |
 | 14 | ~~**No rate limiting on share code generation**~~ | `ShareCodeManager.java` | ✅ **Fixed** - Added Guava Cache rate limiter (3 seconds) |
 | 15 | ~~**`PlayerData.getKits()` creates a copy on every call**~~ | `PlayerData.java:63` | ✅ **Fixed** - Uses `Collections.unmodifiableMap` to avoid copies |
 
@@ -340,13 +340,13 @@ if (provider != null) {
 ## 🚀 Performance Improvement Suggestions
 
 ### 1. Use Virtual Threads (Java 21+)
-Replace the `Executors.newSingleThreadExecutor()` / `newFixedThreadPool()` in storage handlers with `Executors.newVirtualThreadPerTaskExecutor()`. Since you're already on Java 21, virtual threads eliminate thread pool sizing concerns and improve throughput for I/O-bound storage operations.
+✅ **Implemented** - Replaced the `Executors.newSingleThreadExecutor()` / `newFixedThreadPool()` in storage handlers with `Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory())`.
 
 ### 2. Batch MySQL Operations
-`migrateAllData()` fires individual `INSERT` statements for each kit. Use JDBC batch operations (`addBatch()` / `executeBatch()`) for 5–10× migration speed improvement.
+✅ **Implemented** - `migrateAllData()` and `saveKits()` now use JDBC batch operations (`addBatch()` / `executeBatch()`) for up to 10× migration speed improvement.
 
 ### 3. Cache GUI Item Templates
-`GuiManager.loadGuiItem()` reads from `gui.yml` FileConfiguration on every GUI open. Cache the built `ItemStack` templates on reload instead of rebuilding them per-open.
+✅ **Implemented** - Static GUI items (backgrounds, borders) are now cached using a `staticItemCache` Map in `GuiManager` when loaded from configuration.
 
 ### 4. Lazy-Load Global Kits
 `loadGlobalKits()` fetches all global kits on startup and holds them in memory. On servers with hundreds of global kits, this wastes memory. Consider pagination-aware lazy loading.
@@ -364,10 +364,7 @@ Sound sound = Registry.SOUNDS.get(NamespacedKey.minecraft(soundName.toLowerCase(
 Already implemented in this fix — ensures clean cross-compilation from any JDK to Java 21 bytecode.
 
 ### 7. Connection Pool Validation Query
-Add a `connectionTestQuery` to the HikariCP config:
-```java
-config.setConnectionTestQuery("SELECT 1");
-```
+✅ **Implemented** - Added `config.setConnectionTestQuery("SELECT 1");` to the HikariCP config to ensure connection viability.
 This prevents stale connections from being served after MySQL timeouts.
 
 ### 8. Decouple Combat Tag from Plugin

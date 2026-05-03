@@ -27,11 +27,7 @@ public class MySQLStorageHandler implements StorageHandler {
         this.plugin = plugin;
         
         int poolSize = plugin.getConfigManager().getMainConfig().getInt("storage.mysql.pool_settings.maximum_pool_size", 5);
-        this.executor = Executors.newFixedThreadPool(poolSize, r -> {
-            Thread t = new Thread(r, "T-Kits-MySQL-Worker");
-            t.setDaemon(true);
-            return t;
-         });
+        this.executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("T-Kits-MySQL-Worker-", 0).factory());
          this.playerKitsTable = "`tkits_player_kits`"; 
     }
 
@@ -58,6 +54,7 @@ public class MySQLStorageHandler implements StorageHandler {
          } catch (RuntimeException e) { 
              throw new SQLException("MySQL JDBC Driver (com.mysql.cj.jdbc.Driver) not found. Ensure it's included.", e);
          }
+        config.setConnectionTestQuery("SELECT 1");
 
 
         ConfigurationSection poolSettings = mysqlConfig.getConfigurationSection("pool_settings");
@@ -279,6 +276,38 @@ public class MySQLStorageHandler implements StorageHandler {
              return CompletableFuture.failedFuture(e);
          }
     }
+    @Override
+    public CompletableFuture<Void> saveKits(List<Kit> kits) {
+        if (kits == null || kits.isEmpty()) return CompletableFuture.completedFuture(null);
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "INSERT INTO " + playerKitsTable + " (owner_uuid, kit_number, contents, enderchest_contents, is_global) " +
+                    "VALUES (?, ?, ?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE " +
+                    "contents = VALUES(contents), " +
+                    "enderchest_contents = VALUES(enderchest_contents), " +
+                    "is_global = VALUES(is_global)";
+            try (Connection conn = getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                 conn.setAutoCommit(false);
+                 for (Kit kit : kits) {
+                      if (kit.getKitNumber() <= 0) continue;
+                      ps.setString(1, kit.getOwner().toString());
+                      ps.setInt(2, kit.getKitNumber());
+                      ps.setString(3, KitContents.serialize(kit.getContents()));
+                      ps.setString(4, KitContents.serialize(kit.getEnderChestContents()));
+                      ps.setBoolean(5, kit.isGlobal());
+                      ps.addBatch();
+                 }
+                 ps.executeBatch();
+                 conn.commit();
+                 conn.setAutoCommit(true);
+                 return null;
+            } catch (Exception e) {
+                 plugin.getMessageUtil().logException("Batch save error", e);
+                 throw new RuntimeException(e);
+            }
+        }, executor);
+    }
 
     @Override
     public CompletableFuture<Void> deletePlayerKit(UUID playerUUID, int kitNumber) {
@@ -350,15 +379,11 @@ public class MySQLStorageHandler implements StorageHandler {
                   return CompletableFuture.completedFuture(null);
               }
                plugin.getMessageUtil().logInfo("Migrating " + kits.size() + " kits for player " + playerUUID + " from MySQL to " + targetHandler.getClass().getSimpleName() + "...");
-              List<CompletableFuture<Void>> saveFutures = kits.values().stream()
-                 .map(kit -> targetHandler.savePlayerKit(playerUUID, kit)
-                      .exceptionally(ex -> {
-                           plugin.getMessageUtil().logException("Failed migrating kit " + kit.getKitNumber() + " for player " + playerUUID, ex);
-                           return null;
-                       })
-                  )
-                 .collect(Collectors.toList());
-             return CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0]));
+              return targetHandler.saveKits(new ArrayList<>(kits.values()))
+                 .exceptionally(ex -> {
+                      plugin.getMessageUtil().logException("Failed batch migrating kits for player " + playerUUID, ex);
+                      return null;
+                 });
          }, executor);
      }
 

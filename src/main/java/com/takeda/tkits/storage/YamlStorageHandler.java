@@ -31,11 +31,7 @@ public class YamlStorageHandler implements StorageHandler {
         
         
         
-        this.executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "T-Kits-YAML-Storage");
-            t.setDaemon(true);
-            return t;
-        });
+        this.executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("T-Kits-YAML-Storage-", 0).factory());
     }
 
     @Override
@@ -362,15 +358,11 @@ public class YamlStorageHandler implements StorageHandler {
                  return CompletableFuture.completedFuture(null);
              }
               plugin.getMessageUtil().logInfo("Migrating " + kits.size() + " kits for player " + playerUUID + " from YAML to " + targetHandler.getClass().getSimpleName() + "...");
-             List<CompletableFuture<Void>> saveFutures = kits.values().stream()
-                 .map(kit -> targetHandler.savePlayerKit(playerUUID, kit)
-                     .exceptionally(ex -> {
-                         plugin.getMessageUtil().logException("Failed migrating kit " + kit.getKitNumber() + " for player " + playerUUID, ex);
-                         return null; 
-                      })
-                 )
-                 .collect(Collectors.toList());
-             return CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0]));
+             return targetHandler.saveKits(new ArrayList<>(kits.values()))
+                 .exceptionally(ex -> {
+                      plugin.getMessageUtil().logException("Failed batch migrating kits for player " + playerUUID, ex);
+                      return null; 
+                 });
          }, executor);
      }
 
