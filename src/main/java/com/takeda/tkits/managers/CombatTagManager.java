@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.HashSet;
+import java.util.Collections;
 
 public class CombatTagManager implements Listener {
 
@@ -31,42 +32,25 @@ public class CombatTagManager implements Listener {
     private boolean combatTagPreventEnderpearl;
     private long combatTagDurationMillis;
 
+    /** Pre-computed immutable set of blocked commands for O(1) lookup. Rebuilt on reload. */
+    private volatile Set<String> cachedBlockedCommands = Collections.emptySet();
+
     private final Cache<UUID, Long> combatTaggedPlayers;
     @Getter private final boolean internalCombatTagEnabled; 
-
-     
-     /*
-     private final boolean useExternalPlugin;
-     private final String externalPluginName;
-     
-     
-     */
 
     public CombatTagManager(TKits plugin) {
         this.plugin = plugin;
         this.msg = plugin.getMessageUtil();
         this.combatTaggedPlayers = CacheBuilder.newBuilder()
-                
                 .expireAfterWrite(plugin.getConfigManager().getMainConfig().getLong("combat_tag.duration_seconds", 10) + 5, TimeUnit.SECONDS)
                 .build();
 
          reloadConfigSettings(); 
 
-         
-         
-         
-         
-
-         
          this.internalCombatTagEnabled = this.combatTagEnabled; 
 
          if (internalCombatTagEnabled) {
              plugin.getMessageUtil().logInfo("Internal combat tag system enabled (Duration: " + TimeUnit.MILLISECONDS.toSeconds(combatTagDurationMillis) + "s).");
-             
-         } else if (combatTagEnabled) {
-             
-             
-              plugin.getMessageUtil().logWarning("External combat tag hooks are placeholder logic. Combat Tag checking may not function.");
          } else {
              plugin.getMessageUtil().logInfo("Combat Tag integration is disabled.");
          }
@@ -95,29 +79,25 @@ public class CombatTagManager implements Listener {
          long durationSeconds = plugin.getConfigManager().getMainConfig().getLong("combat_tag.duration_seconds", 10);
          this.combatTagDurationMillis = TimeUnit.SECONDS.toMillis(durationSeconds);
 
-         
-         
-          plugin.getMessageUtil().logInfo("Combat tag settings reloaded: Enabled=" + combatTagEnabled + ", PreventEnderpearl=" + combatTagPreventEnderpearl + ", Duration=" + durationSeconds + "s.");
-     }
+         // Pre-compute the blocked commands set on reload for O(1) lookup at runtime
+         List<String> blockedCommandsList = plugin.getConfigManager().getCombatTagBlockedCommands();
+         Set<String> tempSet = new HashSet<>(blockedCommandsList.size());
+         for (String cmd : blockedCommandsList) {
+             tempSet.add(cmd.toLowerCase());
+         }
+         this.cachedBlockedCommands = Collections.unmodifiableSet(tempSet);
 
-     /* Placeholder for external hook setup
-     private void setupExternalHook() {
-          if (!useExternalPlugin) return;
-          
+         plugin.getMessageUtil().logInfo("Combat tag settings reloaded: Enabled=" + combatTagEnabled + ", PreventEnderpearl=" + combatTagPreventEnderpearl + ", Duration=" + durationSeconds + "s, BlockedCmds=" + cachedBlockedCommands.size());
      }
-     */
 
 
     public boolean isTagged(Player player) {
         if (!combatTagEnabled) return false;
 
-         
-
-        
-         if (internalCombatTagEnabled) {
+        if (internalCombatTagEnabled) {
             Long expiryTime = combatTaggedPlayers.getIfPresent(player.getUniqueId());
             return expiryTime != null && System.currentTimeMillis() < expiryTime;
-         }
+        }
          
         return false;
     }
@@ -125,9 +105,6 @@ public class CombatTagManager implements Listener {
     public long getRemainingTagTimeMillis(Player player) {
          if (!isTagged(player)) return 0; 
 
-         
-
-         
          if (internalCombatTagEnabled) {
             Long expiryTime = combatTaggedPlayers.getIfPresent(player.getUniqueId());
             if (expiryTime != null) {
@@ -138,48 +115,39 @@ public class CombatTagManager implements Listener {
         return 0;
     }
 
-
-     
-     
-
      @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
      public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
          Entity victimEntity = event.getEntity();
          Entity damagerEntity = event.getDamager();
          Player victim = (victimEntity instanceof Player) ? (Player) victimEntity : null;
-         final Player[] attacker = {null};
+         Player attacker = null;
 
          if (damagerEntity instanceof Player) {
-             attacker[0] = (Player) damagerEntity;
-         } else if (damagerEntity instanceof Projectile) {
-             Entity shooter = (Entity) ((Projectile) damagerEntity).getShooter();
-             if (shooter instanceof Player) {
-                 attacker[0] = (Player) shooter;
+             attacker = (Player) damagerEntity;
+         } else if (damagerEntity instanceof Projectile projectile) {
+             if (projectile.getShooter() instanceof Player shooter) {
+                 attacker = shooter;
              }
          }
 
-         
-         if (victim != null && attacker[0] != null && !victim.equals(attacker[0])) {
+         if (victim != null && attacker != null && !victim.equals(attacker)) {
              tagPlayer(victim);
-             tagPlayer(attacker[0]);
-             plugin.getLogger().finest(() -> "Combat tagged: " + victim.getName() + " and " + attacker[0].getName());
+             tagPlayer(attacker);
+             final Player finalAttacker = attacker;
+             plugin.getLogger().finest(() -> "Combat tagged: " + victim.getName() + " and " + finalAttacker.getName());
          }
      }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
-         
          combatTaggedPlayers.invalidate(event.getPlayer().getUniqueId());
     }
 
     private void tagPlayer(Player player) {
          long expiryTime = System.currentTimeMillis() + combatTagDurationMillis;
          combatTaggedPlayers.put(player.getUniqueId(), expiryTime);
-         
-         
     }
 
-     
       @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
       public void onCommandPreProcess(PlayerCommandPreprocessEvent event) {
           if (!isTagged(event.getPlayer())) return; 
@@ -188,18 +156,8 @@ public class CombatTagManager implements Listener {
            String command = rawCommand.startsWith("/") ? rawCommand : "/" + rawCommand;
            command = command.toLowerCase(); 
 
-           
-           List<String> blockedCommandsList = plugin.getConfigManager().getCombatTagBlockedCommands();
-           
-           Set<String> blockedCommands = new HashSet<>(blockedCommandsList); 
-           
-           
-           
-           
-           
-           if (blockedCommands.contains(command)) {
+           if (cachedBlockedCommands.contains(command)) {
                Player player = event.getPlayer();
-               
                 if(!player.hasPermission("tkits.combattag.bypass")) { 
                     long remainingMillis = getRemainingTagTimeMillis(player);
                     double remainingSeconds = Math.ceil(remainingMillis / 1000.0);

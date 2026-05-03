@@ -4,7 +4,7 @@ main: com.takeda.tkits.TKits
 api-version: '1.21'
 author: Takeda
 description: ${project.description}
-depend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI]
 
 commands:
   kit:

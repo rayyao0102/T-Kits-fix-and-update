@@ -6,11 +6,11 @@
 
     <groupId>com.takeda</groupId>
     <artifactId>T-Kits</artifactId>
-    <version>1.0.6</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <name>T-Kits</name>
-    <description>Kits made easier!!</description>
+    <description>A high-performance kit management suite for Paper 1.21.x</description>
 
     <properties>
         <java.version>21</java.version>
