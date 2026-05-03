@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/badge/Minecraft-1.21.x-brightgreen?style=flat-square" alt="Minecraft Version">
     <img src="https://img.shields.io/badge/Java-21+-blue?style=flat-square" alt="Java Version">
     <img src="https://img.shields.io/badge/Platform-Paper-blue?style=flat-square" alt="Platform">
-    <img src="https://img.shields.io/badge/Version-1.0.6-purple?style=flat-square" alt="Plugin Version">
+    <img src="https://img.shields.io/badge/Version-1.1-purple?style=flat-square" alt="Plugin Version">
     <img src="https://img.shields.io/badge/License-All%20Rights%20Reserved-red?style=flat-square" alt="License">
   </p>
 </p>
