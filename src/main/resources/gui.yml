@@ -32,7 +32,6 @@ items:
       material: CYAN_SHULKER_BOX
       name: "&b&lKit &f{kit_number}"
       lore:
-        - "&d&lStatus:"
         - ""
         - "&e▸ &aLeft-Click: &7Edit"
         - "&6▸ &fShift+Click: &bLoad"

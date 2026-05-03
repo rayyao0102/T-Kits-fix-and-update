@@ -306,7 +306,7 @@ public class KitManager {
             
             try {
                 
-                player.setHealth(player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getValue());
             } catch (Exception e) {
                 plugin.getMessageUtil().debug(" -> Error getting max health attribute, defaulting to 20.0"); 
                 player.setHealth(20.0); 

@@ -378,8 +378,8 @@ public class GuiManager implements InventoryHolder {
          ItemStack filler = loadGuiItem("items.main_menu.filler", Material.GRAY_STAINED_GLASS_PANE, "&r", null);
          for (int i = 0; i < 9; i++) gui.setItem(i, filler.clone());
          for (int i = 36; i < 45; i++) gui.setItem(i, filler.clone());
-         int kitButtonSlotStart = 10;
-         int kitButtonSlotEnd = 16;
+         int kitButtonSlotStart = 18;
+         int kitButtonSlotEnd = 26;
          int currentKitSlot = kitButtonSlotStart;
          for (int i = 1; i <= configManager.getMaxKitsPerPlayer(); i++) {
              if (currentKitSlot > kitButtonSlotEnd) break;
@@ -885,7 +885,7 @@ public class GuiManager implements InventoryHolder {
                     }, 1L);
                 }
             })
-            .preventClose()
+            // .preventClose()   // <-- REMOVED: allows ESC to close the GUI
             .open(player);
     }
 
@@ -1431,12 +1431,11 @@ public class GuiManager implements InventoryHolder {
             msg.sendActionBar(player, "clear_confirmation_required", "kit_number", String.valueOf(kitNum)); msg.playSound(player, "error");
             resetGuiCloseMarker(playerUUID);
         } else {
-            confirmClickCooldown.remove(playerUUID);
-            Component title = getGuiTitle("confirmation", "&8[&c!&8] &e&lConfirmation")
-                                .replaceText(cfg -> cfg.matchLiteral("{kit_number}").replacement(String.valueOf(kitNum)));
-            Component confirmText = msg.deserialize("&cDelete Kit " + kitNum + " permanently.");
-            Component cancelText = msg.deserialize("&aKeep the kit.");
-            openConfirmationGUI(player, "clear_kit_execute", kitNum, title, confirmText, cancelText); msg.playSound(player, "confirmation_open");
+            confirmClickCooldown.remove(playerUUID); // 清除冷却记录
+            kitManager.clearKit(player, kitNum);
+            msg.sendMessage(player, "kit_cleared", "kit_number", String.valueOf(kitNum));
+            msg.playSound(player, "kit_clear");
+            handleNavigationBack(playerUUID);
         }
     }
 
@@ -1709,4 +1708,4 @@ public class GuiManager implements InventoryHolder {
         if (metaChanged) item.setItemMeta(meta);
     }
 
-} 
+}
