@@ -64,10 +64,9 @@ public class MessageUtil {
             return Component.empty();
         }
         
-         String CCText = ChatColor.translateAlternateColorCodes('&', text); 
          String papiApplied = (player != null && Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI"))
-                            ? PlaceholderAPI.setPlaceholders(player, CCText)
-                            : CCText;
+                            ? PlaceholderAPI.setPlaceholders(player, text)
+                            : text;
 
         
          return legacySerializer.deserialize(papiApplied)
@@ -133,9 +132,14 @@ public class MessageUtil {
             return;
         }
         try {
-            Sound sound = Sound.valueOf(soundName.toUpperCase());
-            player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-        } catch (IllegalArgumentException e) {
+            org.bukkit.Registry<Sound> registry = org.bukkit.Registry.SOUNDS;
+            Sound sound = registry.get(org.bukkit.NamespacedKey.minecraft(soundName.toLowerCase()));
+            if (sound != null) {
+                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
+            } else {
+                plugin.getLogger().warning("Invalid sound name in config.yml for key '" + soundKey + "': " + soundName);
+            }
+        } catch (Exception e) {
             plugin.getLogger().warning("Invalid sound name in config.yml for key '" + soundKey + "': " + soundName);
         }
     }
@@ -155,7 +159,7 @@ public class MessageUtil {
 
      
      public String getLegacyColorized(String text) {
-         return ChatColor.translateAlternateColorCodes('&', text);
+         return legacySerializer.serialize(legacySerializer.deserialize(text));
      }
       public String getLegacyColorized(Component component) {
           return legacySerializer.serialize(component);

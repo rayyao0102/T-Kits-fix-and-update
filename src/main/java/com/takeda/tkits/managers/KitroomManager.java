@@ -42,7 +42,14 @@ public class KitroomManager {
                 try {
                     int slot = Integer.parseInt(slotKey);
                     
-                    ItemStack item = categorySec.getItemStack(slotKey); 
+                    Object rawItem = categorySec.get(slotKey);
+                    ItemStack item = null;
+                    if (rawItem instanceof ItemStack) {
+                        item = (ItemStack) rawItem;
+                    } else if (rawItem instanceof String) {
+                        item = com.takeda.tkits.util.ItemSerialization.itemStackFromBase64((String) rawItem);
+                    }
+                    
                     if (item != null && slot >= 0 && slot < 45) { 
                         slotMap.put(slot, item);
                     } else if (item != null) {
@@ -85,7 +92,12 @@ public class KitroomManager {
                 ItemStack item = slotEntry.getValue();
                 
                 if (item != null && item.getType() != org.bukkit.Material.AIR) {
-                    config.set("categories." + categoryKey + "." + slotKey, item);
+                    try {
+                        String b64 = com.takeda.tkits.util.ItemSerialization.itemStackToBase64(item);
+                        if (b64 != null) config.set("categories." + categoryKey + "." + slotKey, b64);
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Failed to serialize item for kitroom category " + categoryKey + " slot " + slotKey);
+                    }
                 }
             }
             

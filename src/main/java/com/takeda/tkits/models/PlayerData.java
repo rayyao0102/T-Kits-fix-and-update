@@ -61,6 +61,6 @@ public class PlayerData {
 
      
     public Map<Integer, Kit> getKits() {
-        return Map.copyOf(this.kits); 
+        return java.util.Collections.unmodifiableMap(this.kits); 
     }
 }

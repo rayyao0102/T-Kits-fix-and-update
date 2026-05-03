@@ -188,7 +188,7 @@ public class PlayerDataManager {
 
          
          try {
-             CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0])).get(10, TimeUnit.SECONDS); 
+             CompletableFuture.allOf(saveFutures.toArray(new CompletableFuture[0])).get(30, TimeUnit.SECONDS); 
              long duration = System.currentTimeMillis() - startTime;
              plugin.getMessageUtil().logInfo("Finished saving player data in " + duration + "ms.");
          } catch (ExecutionException | InterruptedException e) {

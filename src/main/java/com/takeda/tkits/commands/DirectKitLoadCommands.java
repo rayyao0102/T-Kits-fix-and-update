@@ -24,7 +24,11 @@ public class DirectKitLoadCommands extends BaseCommand {
 
     
     private void attemptLoadKit(Player player, int kitNumber) {
-        
+        int maxKits = plugin.getConfigManager().getMaxKitsPerPlayer();
+        if (kitNumber < 1 || kitNumber > maxKits) {
+            plugin.getMessageUtil().sendMessage(player, "error"); // Assuming 'error' exists
+            return;
+        }
 
         
         if (plugin.getPlayerDataManager().getPlayerData(player) == null) {

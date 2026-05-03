@@ -20,6 +20,7 @@ public class ShareCodeManager {
 
     private final TKits plugin;
     private Cache<String, ShareData> shareCodeCache; 
+    private final Cache<UUID, Long> rateLimitCache = CacheBuilder.newBuilder().expireAfterWrite(3, TimeUnit.SECONDS).build();
 
     private int codeLength;
     private boolean codeOneTimeUse;
@@ -97,11 +98,16 @@ public class ShareCodeManager {
         boolean allowGlobalShare = plugin.getConfigManager().isAllowSharingGlobalKits();
         if (kit.isGlobal() && !allowGlobalShare) {
             plugin.getMessageUtil().debug("generateShareCodeFromKit: Failed - Cannot share global kit."); 
-            
-            
-            
             return null;
         }
+        
+        Long lastGen = rateLimitCache.getIfPresent(ownerUUID);
+        if (lastGen != null && System.currentTimeMillis() - lastGen < 3000) {
+            org.bukkit.entity.Player p = org.bukkit.Bukkit.getPlayer(ownerUUID);
+            if (p != null) plugin.getMessageUtil().sendMessage(p, "on_cooldown", "time", "3.0");
+            return null;
+        }
+        rateLimitCache.put(ownerUUID, System.currentTimeMillis());
         
 
         String code;

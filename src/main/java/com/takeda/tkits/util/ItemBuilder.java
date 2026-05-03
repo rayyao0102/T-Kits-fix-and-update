@@ -135,11 +135,10 @@ public class ItemBuilder {
     }
 
     public ItemBuilder skullOwner(String ownerName) {
-         if (this.itemMeta instanceof SkullMeta) {
+         if (this.itemMeta instanceof org.bukkit.inventory.meta.SkullMeta) {
              try {
-                  
-                  
-                  
+                  org.bukkit.OfflinePlayer offlinePlayer = org.bukkit.Bukkit.getOfflinePlayer(ownerName);
+                  ((org.bukkit.inventory.meta.SkullMeta) this.itemMeta).setOwningPlayer(offlinePlayer);
              } catch (Exception ignored) { /* Handle potential errors */ }
          }
          return this;

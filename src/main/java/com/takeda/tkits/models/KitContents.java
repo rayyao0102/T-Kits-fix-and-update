@@ -55,8 +55,19 @@ public class KitContents {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
 
-            dataOutput.writeInt(contents.items.size()); 
+            java.util.List<Map.Entry<Integer, ItemStack>> validItems = new java.util.ArrayList<>();
             for (Map.Entry<Integer, ItemStack> entry : contents.items.entrySet()) {
+                try (ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+                     BukkitObjectOutputStream testDataOut = new BukkitObjectOutputStream(testOut)) {
+                    testDataOut.writeObject(entry.getValue());
+                    validItems.add(entry);
+                } catch (Exception e) {
+                    TKits.getInstance().getLogger().warning("Failed to serialize item in slot " + entry.getKey() + ". Skipping. Error: " + e.getMessage());
+                }
+            }
+
+            dataOutput.writeInt(validItems.size()); 
+            for (Map.Entry<Integer, ItemStack> entry : validItems) {
                 dataOutput.writeInt(entry.getKey()); 
                 dataOutput.writeObject(entry.getValue()); 
             }
