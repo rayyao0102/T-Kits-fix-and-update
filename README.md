@@ -1,55 +1,125 @@
 <p align="center">
-  <h1 align="center">⚔️ T-Kits</h1>
-  <p align="center">
-    <strong>A high-performance kit management suite for Paper 1.21.x</strong>
-  </p>
-  <p align="center">
-    <a href="https://github.com/takedaa83/T-Kits/actions"><img src="https://img.shields.io/github/actions/workflow/status/takedaa83/T-Kits/maven.yml?style=flat-square&label=Build" alt="Build Status"></a>
-    <img src="https://img.shields.io/badge/Minecraft-1.21.x-brightgreen?style=flat-square" alt="Minecraft Version">
-    <img src="https://img.shields.io/badge/Java-21+-blue?style=flat-square" alt="Java Version">
-    <img src="https://img.shields.io/badge/Platform-Paper-blue?style=flat-square" alt="Platform">
-    <img src="https://img.shields.io/badge/Version-1.1-purple?style=flat-square" alt="Plugin Version">
-    <img src="https://img.shields.io/badge/License-All%20Rights%20Reserved-red?style=flat-square" alt="License">
-  </p>
+  <img src="assets/banner.png" alt="T-Kits Banner" width="100%">
+</p>
+
+<h1 align="center">⚔️ T-Kits</h1>
+
+<p align="center">
+  <strong>A high-performance kit management suite for Paper 1.21.x</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/takedaa83/T-Kits/actions"><img src="https://img.shields.io/github/actions/workflow/status/takedaa83/T-Kits/maven.yml?style=for-the-badge&label=BUILD&logo=github&logoColor=white&color=7c3aed" alt="Build Status"></a>
+  <img src="https://img.shields.io/badge/MINECRAFT-1.21.x-10b981?style=for-the-badge&logo=mojangstudios&logoColor=white" alt="Minecraft Version">
+  <img src="https://img.shields.io/badge/JAVA-21+-3b82f6?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java Version">
+  <img src="https://img.shields.io/badge/PLATFORM-Paper-8b5cf6?style=for-the-badge" alt="Platform">
+  <img src="https://img.shields.io/badge/VERSION-1.2-f59e0b?style=for-the-badge" alt="Plugin Version">
+</p>
+
+<p align="center">
+  <sub>Built for competitive Minecraft PvP servers · Async-first · Battle-tested</sub>
 </p>
 
 ---
 
-## Overview
+## 📋 Table of Contents
 
-**T-Kits** is a production-grade kit management plugin purpose-built for competitive Minecraft PvP servers running Paper 1.21.x. It delivers a complete GUI-based kit editing workflow, one-click inventory regearing, cross-player kit sharing, a server-wide categorized kitroom, and a full developer API — all powered by non-blocking async storage with support for both YAML and MySQL backends.
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| **GUI Kit Editor** | Full drag-and-drop kit editor with armor slots, ender chest support, and stack-based navigation history |
-| **Async Storage** | All I/O via `CompletableFuture` with Java 21 virtual threads. YAML and MySQL with zero-downtime live migration |
-| **Regear & Arrange** | Replenish consumed items from your kit template, or re-sort your inventory to match kit layout |
-| **Kit Sharing** | Generate temporary one-time-use codes to share kit configurations between players |
-| **Kitroom** | Categorized item repository managed via in-game admin GUI. Players click items to take copies |
-| **Combat Tag** | Configurable combat tagging with command blocking, ender pearl prevention, and bypass permissions |
-| **Developer API** | 14-method public API registered via Bukkit `ServicesManager` for third-party integrations |
-| **PlaceholderAPI** | Expose kit status, combat tag state, and player data to scoreboards and chat plugins |
+- [Overview](#-overview)
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+- [Commands](#-commands)
+- [Permissions](#-permissions)
+- [Configuration](#-configuration)
+- [Developer API](#-developer-api)
+- [PlaceholderAPI](#-placeholderapi)
+- [Architecture](#-architecture)
+- [Building from Source](#-building-from-source)
+- [Changelog](#-changelog)
+- [License](#-license)
 
 ---
 
-## Getting Started
+## 🔎 Overview
+
+**T-Kits** is a production-grade kit management plugin purpose-built for competitive Minecraft PvP servers running **Paper 1.21.x**. It delivers a complete GUI-based kit editing workflow, one-click inventory regearing, cross-player kit sharing, a server-wide categorized kitroom, and a full developer API — all powered by **non-blocking async storage** with support for both YAML and MySQL backends.
+
+Whether you're running a 10-player practice server or a 500-player competitive network, T-Kits is engineered to handle it with zero-lag kit operations, thread-safe data persistence, and graceful error recovery.
+
+---
+
+## ✨ Features
+
+<table>
+  <tr>
+    <td width="50%">
+
+### 🎒 GUI Kit Editor
+Full drag-and-drop kit editor with armor slots, offhand, ender chest support, and stack-based navigation history. Auto-saves on close with race condition protection.
+
+### ⚡ Instant Regear
+Replenish consumed items from your kit template in a single click. Place a Regear Shulker Box or use the `/regear` command — intelligently matches items by type and metadata while ignoring durability.
+
+### 🔄 Inventory Arrange
+Re-sort your messy inventory to perfectly match your kit layout with `/arrange`. Configurable behavior for extra items: keep, drop, or move to empty slots.
+
+</td>
+<td width="50%">
+
+### 🔗 Kit Sharing
+Generate temporary alphanumeric codes to share kit configurations between players. Configurable code length, expiration time, and one-time-use toggle. Powered by `SecureRandom` for unpredictable codes.
+
+### 🏪 Kitroom
+Server-wide categorized item repository managed entirely via in-game admin GUI. Players click items to take copies. Supports per-category permissions and configurable take cooldowns.
+
+### ⚔️ Combat Tag
+Configurable combat tagging system with command blocking, ender pearl prevention, and permission-based bypass. Seamlessly integrates with all kit operations to prevent abuse during PvP.
+
+</td>
+  </tr>
+</table>
+
+### Additional Highlights
+
+| Feature | Description |
+|---------|-------------|
+| 🗄️ **Dual Storage** | YAML (file-based) and MySQL with HikariCP connection pooling. Live-migrate between backends with zero downtime |
+| 🔒 **Thread-Safe** | Per-player file locking, async load coalescing, and transactional MySQL batch operations prevent data corruption |
+| 🧩 **Developer API** | 14-method public API registered via Bukkit `ServicesManager` for third-party plugin integrations |
+| 📊 **PlaceholderAPI** | Expose kit status, combat tag state, and player data to scoreboards and chat plugins |
+| 🌍 **Global Kits** | Mark kits as globally visible so all players can browse and load community loadouts |
+| 🔊 **Sound Effects** | Configurable sound feedback for every action using modern namespaced keys |
+| 💬 **Fully Customizable** | Every message, GUI title, button, sound, and tooltip is configurable via YAML |
+
+---
+
+## 🚀 Getting Started
 
 ### Requirements
 
-| Component | Version |
-|-----------|---------|
-| Server | Paper 1.21.x (or compatible forks: Purpur, Folia) |
-| Java | 21+ |
-| Optional | PlaceholderAPI, MySQL 8.0+ |
+| Component | Version | Required |
+|-----------|---------|----------|
+| Server | Paper 1.21.x (or forks: Purpur, etc.) | ✅ |
+| Java | 21+ | ✅ |
+| PlaceholderAPI | 2.11+ | ❌ Optional |
+| MySQL | 8.0+ | ❌ Optional |
 
 ### Installation
 
-1. Download or build: `mvn clean package`
-2. Place `T-Kits-1.1.jar` into `plugins/`
-3. Start the server — config files generate automatically
-4. Configure `plugins/T-Kits/config.yml` to your needs
+```bash
+# Option 1: Download the latest release
+# → Place T-Kits-1.2.jar into your plugins/ folder
+
+# Option 2: Build from source
+git clone https://github.com/takedaa83/T-Kits.git
+cd T-Kits
+mvn clean package
+# Output: target/T-Kits-1.2.jar
+```
+
+1. Place `T-Kits-1.2.jar` into your `plugins/` directory
+2. Start the server — config files generate automatically
+3. Configure `plugins/T-Kits/config.yml` to your preferences
+4. Use `/kit` to open the GUI and start managing kits
 
 ### MySQL Setup
 
@@ -63,222 +133,356 @@ storage:
     database: "tkits"
     username: "your_user"
     password: "your_password"
+    useSSL: false
+    pool_settings:
+      maximum_pool_size: 10
+      minimum_idle: 5
 ```
 
-Migrate existing data: `/tkitsadmin migrate yaml mysql`
+Already have data in YAML? Migrate seamlessly:
+```
+/tkitsadmin migrate yaml mysql
+```
 
 ---
 
-## Commands
+## 💻 Commands
+
+### Player Commands
+
+| Command | Alias | Permission | Description |
+|---------|-------|-----------|-------------|
+| `/kit` | `/k` | `tkits.use` | Open the main kit management GUI |
+| `/kit import <code>` | — | `tkits.kit.share` | Import a kit from a share code |
+| `/k1` – `/k7` | — | `tkits.load.<N>` | Quick-load kit by number |
+| `/regear` | `/rg` | `tkits.regear` | Get a Regear Shulker Box to replenish items |
+| `/arrange` | `/ag` | `tkits.arrange` | Re-sort inventory to match kit layout |
+
+### Admin Commands
 
 | Command | Permission | Description |
 |---------|-----------|-------------|
-| `/kit` | `tkits.use` | Open the main kit management GUI |
-| `/kit load <N>` | `tkits.use` | Load a specific kit by number |
-| `/kit share` | `tkits.kit.share` | Generate a share code for your current kit |
-| `/kit import <code>` | `tkits.kit.share` | Import a kit from a share code |
-| `/k1` – `/k7` | `tkits.load.<N>` | Quick-load kit shortcuts |
-| `/regear` · `/rg` | `tkits.regear` | Get a Regear Shulker Box to replenish items |
-| `/arrange` · `/ag` | `tkits.arrange` | Re-sort inventory to match kit layout |
 | `/tkitsadmin reload` | `tkits.admin` | Reload all configuration files |
 | `/tkitsadmin migrate <from> <to>` | `tkits.admin` | Live-migrate data between storage backends |
-| `/tkitsadmin kitroom` | `tkits.kitroom.admin` | Open the kitroom editor |
+| `/tkitsadmin kitroom` | `tkits.kitroom.admin` | Open the kitroom category editor |
 
 ---
 
-## Permissions
+## 🔐 Permissions
 
 | Permission | Default | Description |
 |-----------|---------|-------------|
-| `tkits.use` | `true` | Main `/kit` command and GUI access |
-| `tkits.load.*` | `true` | All quick-load shortcuts |
-| `tkits.regear` | `true` | `/regear` command |
-| `tkits.arrange` | `true` | `/arrange` command |
-| `tkits.kit.share` | `true` | Share and import kits |
-| `tkits.kit.global` | `true` | Set kits as globally visible |
-| `tkits.kitroom.use` | `true` | Take items from the kitroom |
-| `tkits.admin` | `op` | Administrative commands |
-| `tkits.kitroom.admin` | `op` | Edit kitroom layouts |
-| `tkits.cooldown.bypass` | `op` | Bypass all cooldown timers |
-| `tkits.combattag.bypass` | `op` | Bypass combat tag restrictions |
+| `tkits.use` | ✅ `true` | Main `/kit` command and GUI access |
+| `tkits.load.1` – `tkits.load.7` | ✅ `true` | Quick-load kit shortcuts |
+| `tkits.regear` | ✅ `true` | `/regear` command |
+| `tkits.arrange` | ✅ `true` | `/arrange` command |
+| `tkits.kit.share` | ✅ `true` | Share and import kits via codes |
+| `tkits.kit.global` | ✅ `true` | Set kits as globally visible |
+| `tkits.kitroom.use` | ✅ `true` | Take items from the kitroom |
+| `tkits.admin` | ⛔ `op` | Administrative commands (`/tkitsadmin`) |
+| `tkits.kitroom.admin` | ⛔ `op` | Edit kitroom layouts |
+| `tkits.cooldown.bypass` | ⛔ `op` | Bypass all cooldown timers |
+| `tkits.combattag.bypass` | ⛔ `op` | Bypass combat tag restrictions |
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-T-Kits generates three configuration files:
+T-Kits generates three configuration files on first startup:
 
 | File | Purpose |
 |------|---------|
 | `config.yml` | Storage backend, cooldowns, combat tag, sounds, messages, kit limits |
 | `gui.yml` | GUI titles, button materials, names, lore, Custom Model Data, slot positions |
-| `kitroom.yml` | Kitroom item data (managed via in-game GUI — no manual editing required) |
+| `kitroom.yml` | Kitroom category data (managed via in-game GUI — avoid manual editing) |
 
 <details>
-<summary><b>Key config.yml options</b></summary>
+<summary><strong>📄 config.yml — Key Options</strong></summary>
 
 ```yaml
+# Storage Backend
 storage:
-  type: YAML  # or MYSQL
+  type: YAML  # YAML or MYSQL
 
+# Kit Limits
 kits:
   max_kits_per_player: 9
   save_on_editor_close: true
   clear_kit_requires_confirmation: true
-  prevent_save_items: [BEDROCK, COMMAND_BLOCK]
+  clear_inventory_on_load: false
+  prevent_save_items:
+    - "BEDROCK"
+    - "COMMAND_BLOCK"
+    - "BARRIER"
 
+# Sharing
 sharing:
   code_length: 5
   code_one_time_use: true
   code_expiration_minutes: 5
 
+# Combat Tag
 combat_tag:
   enabled: true
   duration_seconds: 10
-  blocked_commands: ["/k1", "/k2", "/regear", "/spawn"]
   prevent_enderpearl: false
+  blocked_commands:
+    - "/k1"
+    - "/regear"
+    - "/spawn"
+    - "/home"
 
+# Cooldowns (seconds)
 cooldowns:
   kit_load: 3
   regear: 10
   arrange: 5
+
+# Regear & Arrange
+regear:
+  box_material: SHULKER_BOX
+  box_name: "&bRegear Box &7(Place Me)"
+arrange:
+  handle_extra_items: "MOVE_EMPTY"  # KEEP, DROP, or MOVE_EMPTY
+
+# Kitroom
+kitroom:
+  require_per_category_permission: false
+  item_take_cooldown_seconds: 1
+```
+
+</details>
+
+<details>
+<summary><strong>🔊 Sound Configuration</strong></summary>
+
+All sounds use modern namespaced keys (e.g., `entity.experience_orb.pickup`). Set any sound to `""` to disable it.
+
+```yaml
+sounds:
+  gui_click: "ui.button.click"
+  kit_load: "entity.experience_orb.pickup"
+  kit_save: "entity.player.levelup"
+  error: "entity.villager.no"
+  regear_success: "entity.chicken.step"
+  arrange_success: "entity.chicken.step"
+  # ... and more
 ```
 
 </details>
 
 ---
 
-## Developer API
+## 🧩 Developer API
 
-T-Kits provides a public API via Bukkit's `ServicesManager`:
+T-Kits provides a **14-method public API** via Bukkit's `ServicesManager`:
 
 ```java
+// Obtain the API instance
 RegisteredServiceProvider<TKitsAPI> provider =
     Bukkit.getServicesManager().getRegistration(TKitsAPI.class);
 
 if (provider != null) {
     TKitsAPI api = provider.getProvider();
 
-    // Async kit retrieval (recommended)
+    // ── Async Kit Retrieval (recommended) ──
     api.getPlayerKitAsync(playerUUID, 1).thenAccept(optKit -> {
-        optKit.ifPresent(kit -> /* use kit */);
+        optKit.ifPresent(kit -> {
+            // Process kit data off the main thread
+        });
     });
 
-    // Apply kit, regear, arrange
-    api.loadKitOntoPlayer(player, 1);
+    // ── Apply Kit to Player ──
+    boolean loaded = api.loadKitOntoPlayer(player, 1);
+
+    // ── Regear & Arrange ──
     api.performRegear(player);
     api.performArrange(player);
 
-    // Combat tag check
+    // ── Combat Tag Integration ──
     if (api.isPlayerCombatTagged(player)) {
-        long remaining = api.getRemainingCombatTagMillis(player);
+        long remainingMs = api.getRemainingCombatTagMillis(player);
+        double seconds = remainingMs / 1000.0;
     }
 
-    // Open kit selection GUI (returns future)
-    api.choosePersonalKit(player, title).thenAccept(optKit -> {
-        optKit.ifPresent(selectedKit -> /* player chose a kit */);
-    });
+    // ── Interactive Kit Selection GUI ──
+    api.choosePersonalKit(player, Component.text("Pick a Kit"))
+       .thenAccept(optKit -> {
+           optKit.ifPresent(selectedKit -> {
+               // Player selected a kit via the GUI
+           });
+       });
+
+    // ── Get Regear Box Item ──
+    ItemStack regearBox = api.getRegearTriggerItem();
 }
 ```
 
 <details>
-<summary><b>Full API reference</b></summary>
+<summary><strong>📚 Full API Reference</strong></summary>
 
-| Method | Description |
-|--------|-------------|
-| `getPlayerKit(UUID, int)` | Get cached kit synchronously |
-| `getPlayerKitAsync(UUID, int)` | Get kit from storage asynchronously |
-| `getAllPlayerKits(UUID)` | Get all kits for a player |
-| `getAllPlayerKitsAsync(UUID)` | Get all kits asynchronously |
-| `loadKitOntoPlayer(Player, int)` | Apply a kit to a player's inventory |
-| `getLastLoadedKitNumber(Player)` | Get the last loaded kit number |
-| `getCurrentLoadedKit(Player)` | Get the Kit object of the last loaded kit |
-| `getGlobalKits()` | List all global kits |
-| `isPlayerCombatTagged(Player)` | Check if player is combat tagged |
-| `getRemainingCombatTagMillis(Player)` | Get remaining combat tag duration |
-| `getRegearTriggerItem()` | Get the regear shulker box ItemStack |
-| `performRegear(Player)` | Trigger regear for a player |
-| `performArrange(Player)` | Trigger arrange for a player |
-| `choosePersonalKit(Player, Component)` | Open kit selection GUI with future result |
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getPlayerKit(UUID, int)` | `Optional<Kit>` | Get cached kit synchronously |
+| `getPlayerKitAsync(UUID, int)` | `CompletableFuture<Optional<Kit>>` | Get kit from storage asynchronously |
+| `getAllPlayerKits(UUID)` | `Map<Integer, Kit>` | Get all kits for a player (cached) |
+| `getAllPlayerKitsAsync(UUID)` | `CompletableFuture<Map<Integer, Kit>>` | Get all kits asynchronously |
+| `loadKitOntoPlayer(Player, int)` | `boolean` | Apply a kit to a player's inventory |
+| `getLastLoadedKitNumber(Player)` | `int` | Get the last loaded kit number (-1 if none) |
+| `getCurrentLoadedKit(Player)` | `Optional<Kit>` | Get the Kit object of the last loaded kit |
+| `getGlobalKits()` | `List<Kit>` | List all globally-visible kits |
+| `isPlayerCombatTagged(Player)` | `boolean` | Check if player is combat tagged |
+| `getRemainingCombatTagMillis(Player)` | `long` | Get remaining combat tag duration (ms) |
+| `getRegearTriggerItem()` | `ItemStack` | Get the regear shulker box item |
+| `performRegear(Player)` | `boolean` | Trigger regear for a player |
+| `performArrange(Player)` | `boolean` | Trigger arrange for a player |
+| `choosePersonalKit(Player, Component)` | `CompletableFuture<Optional<Kit>>` | Open interactive kit selection GUI |
 
 </details>
 
 ---
 
-## PlaceholderAPI
+## 📊 PlaceholderAPI
 
-| Placeholder | Output |
-|------------|--------|
-| `%tkits_last_loaded_kit%` | `3` or `None` |
-| `%tkits_combat_tagged%` | `Yes` / `No` |
-| `%tkits_combat_tag_time%` | `4.2s` |
-| `%tkits_kit_<N>_exists%` | `Yes` / `No` |
-| `%tkits_kit_<N>_is_global%` | `Yes` / `No` |
+> **Requires**: [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) (soft dependency — plugin works without it)
+
+| Placeholder | Example Output | Description |
+|------------|----------------|-------------|
+| `%tkits_last_loaded_kit%` | `3` or `None` | Last loaded kit number |
+| `%tkits_combat_tagged%` | `Yes` / `No` | Whether player is combat tagged |
+| `%tkits_combat_tag_time%` | `4.2s` | Remaining combat tag duration |
+| `%tkits_kit_<N>_exists%` | `Yes` / `No` | Whether kit N exists |
+| `%tkits_kit_<N>_is_global%` | `Yes` / `No` | Whether kit N is set to global |
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 com.takeda.tkits
 ├── TKits.java                          # Plugin lifecycle & dependency wiring
-├── api/                                # Public API (TKitsAPI interface + impl)
+├── api/
+│   ├── TKitsAPI.java                   # Public API interface (14 methods)
+│   └── TKitsAPIImpl.java              # API implementation
 ├── commands/                           # ACF-based command handlers
-├── config/ConfigManager.java           # Multi-file config loading & caching
-├── listeners/                          # Event handlers (GUI, interactions, player lifecycle)
+├── config/
+│   └── ConfigManager.java             # Multi-file config loading & caching
+├── listeners/
+│   ├── InteractionListener.java       # Regear box placement, GUI clicks
+│   └── PlayerListener.java            # Join/quit lifecycle events
 ├── managers/
-│   ├── GuiManager.java                 # GUI creation, navigation, state tracking
-│   ├── KitManager.java                 # Kit CRUD, loading, global cache
-│   ├── KitroomManager.java            # Category-based item repository
-│   ├── PlayerDataManager.java         # Async player data load/save/cache
-│   ├── CombatTagManager.java          # Combat detection & command blocking
-│   └── ShareCodeManager.java          # Temporary code generation & redemption
-├── models/                             # Data models (Kit, KitContents, PlayerData)
-├── services/                           # Cooldown & utility services
-├── storage/                            # StorageHandler interface + YAML/MySQL backends
-└── util/                               # MessageUtil, GuiUtils, ItemBuilder, ItemSerialization
+│   ├── GuiManager.java                # GUI creation, navigation, state tracking
+│   ├── KitManager.java                # Kit CRUD, loading, global cache
+│   ├── KitroomManager.java           # Category-based item repository
+│   ├── PlayerDataManager.java        # Async player data load/save/cache
+│   ├── CombatTagManager.java         # Combat detection & command blocking
+│   └── ShareCodeManager.java         # Secure code generation & redemption
+├── models/
+│   ├── Kit.java                        # Kit data model (Lombok @Builder)
+│   ├── KitContents.java               # Serialization/deserialization
+│   └── PlayerData.java               # Per-player data container
+├── placeholders/
+│   └── TKitsPlaceholderExpansion.java # PlaceholderAPI integration
+├── services/
+│   ├── CooldownService.java           # Guava cache-based cooldown tracking
+│   └── UtilityService.java           # Regear/arrange execution logic
+├── storage/
+│   ├── StorageHandler.java            # Storage interface (CompletableFuture-based)
+│   ├── YamlStorageHandler.java       # File-based storage with per-player locking
+│   └── MySQLStorageHandler.java      # HikariCP-pooled MySQL with transactions
+└── util/
+    ├── MessageUtil.java               # Adventure API messages, sounds, colors
+    ├── GuiUtils.java                  # GUI helper methods
+    ├── ItemBuilder.java               # Fluent item construction API
+    └── ItemSerialization.java        # Base64 item serialization
 ```
 
 ### Design Principles
 
-- **Non-blocking I/O** — All storage operations return `CompletableFuture`; virtual threads (Java 21) handle executor pools
-- **State-driven GUIs** — `Deque<GuiState>` per player enables back-button navigation; PDC-based action system makes click handling data-driven
-- **Graceful degradation** — Corrupted items are skipped during serialization; failed loads return empty PlayerData instead of crashing
-- **Batched persistence** — MySQL migrations use JDBC batch operations for 10× throughput; GUI item templates are cached on reload
+| Principle | Implementation |
+|-----------|---------------|
+| **Non-Blocking I/O** | All storage operations return `CompletableFuture`; Java 21 virtual threads handle executor pools |
+| **Thread Safety** | Per-player file locks in YAML; transactional rollback in MySQL; concurrent load coalescing |
+| **State-Driven GUIs** | `Deque<GuiState>` per player enables back-button navigation; PDC-based action system makes click handling data-driven |
+| **Graceful Degradation** | Corrupted items are skipped during serialization; failed loads return empty PlayerData instead of crashing |
+| **Batched Persistence** | MySQL migrations use JDBC batch operations with transactional integrity; GUI templates are cached on reload |
+| **Semantic Matching** | Item comparison ignores transient durability — worn equipment still matches its kit template |
 
 ---
 
-## Building from Source
+## 🔨 Building from Source
+
+### Prerequisites
+
+- **JDK 21** or higher
+- **Maven 3.8+**
+
+### Build
 
 ```bash
 git clone https://github.com/takedaa83/T-Kits.git
 cd T-Kits
 mvn clean package
-# Output: target/T-Kits-1.1.jar
 ```
 
-**Build requirements:** JDK 21+, Maven 3.8+
+The compiled plugin JAR will be at `target/T-Kits-1.2.jar`.
 
 ### Dependencies
 
 | Library | Version | Packaging |
 |---------|---------|-----------|
+| [Paper API](https://papermc.io/) | 1.21.x | Provided |
 | [ACF](https://github.com/aikar/commands) | 0.5.1-SNAPSHOT | Shaded |
 | [AnvilGUI](https://github.com/WesJD/AnvilGUI) | 1.10.12-SNAPSHOT | Shaded |
 | [Commons Lang3](https://commons.apache.org/proper/commons-lang/) | 3.14.0 | Shaded |
-| Paper API | 1.21.x | Provided |
 | [Lombok](https://projectlombok.org/) | 1.18.46 | Compile-only |
 | [PlaceholderAPI](https://placeholderapi.com/) | 2.11.5 | Optional |
-| [HikariCP](https://github.com/brettwooldridge/HikariCP) | 6.3.0 | Provided (MySQL only) |
+| [HikariCP](https://github.com/brettwooldridge/HikariCP) | 6.3.0 | Provided (MySQL) |
+| [MySQL Connector/J](https://dev.mysql.com/downloads/connector/j/) | 8.0.33 | Provided (MySQL) |
 
 ---
 
-## License
+## 📝 Changelog
 
-All rights reserved. © Takeda_Dev
+### v1.2 — Stability & Performance Update
+> **15 fixes** addressing data corruption, race conditions, and missing functionality
+
+- **Critical**: Per-player YAML file locking prevents data corruption from concurrent saves
+- **Critical**: Async load coalescing fixes "empty kits on join" race condition
+- **Critical**: Added missing regear shell click handler — GUI clicks now actually trigger regear
+- **Critical**: Sound system modernized to use namespaced keys (sounds actually play now)
+- **High**: Semantic item comparison ignores durability for regear/arrange
+- **High**: MySQL batch saves now properly rollback on failure
+- **High**: Regear box API key aligned with listener key
+- **High**: Auto-save race guard prevents stale data overwrites
+- **Medium**: GUI history capped at 10 entries to prevent memory leaks
+- **Medium**: Non-blocking skull texture lookups via PlayerProfile
+- **Medium**: SecureRandom-based share code generation
+- **Medium**: CombatTag config reload now fully propagates
+- **Medium**: Graceful join errors (warns instead of kicking players)
+- **Performance**: Single-pass kit serialization (eliminated double-write)
+- **Performance**: O(1) regear box lookup via reverse-indexed map
+
+### v1.1 — Initial Release
+- Full GUI kit editor with 7 kit slots
+- YAML and MySQL storage backends
+- Regear and Arrange commands
+- Kit sharing via codes
+- Categorized kitroom system
+- Combat tag integration
+- PlaceholderAPI support
+- Developer API with 14 methods
+
+---
+
+## 📄 License
+
+All rights reserved. © **Takeda**
+
+This software is proprietary. Unauthorized distribution, modification, or commercial use is prohibited without explicit written permission from the author.
 
 ---
 
 <p align="center">
-  <sub>Built for competitive Minecraft PvP servers</sub>
+  <sub>⚔️ Built for competitive Minecraft PvP servers · Crafted with ❤️ by <strong>Takeda</strong></sub>
 </p>
