@@ -35,9 +35,10 @@ public class PlayerListener implements Listener {
             .exceptionally(ex -> {
                  plugin.getMessageUtil().logException("CRITICAL error loading data for player " + player.getName() + " (" + uuid + ") on join!", ex);
                  plugin.getServer().getScheduler().runTask(plugin, () -> {
-                     
                      if (player.isOnline()) {
-                         player.kick(plugin.getMessageUtil().deserialize("&cError loading your T-Kits data. Please report this and reconnect."));
+                         // Notify instead of kicking — the player can still function with empty data
+                         plugin.getMessageUtil().sendRawMessage(player,
+                             "&c&lWarning: &cYour kit data failed to load. Your kits may appear empty. Please report this and try reconnecting.", null);
                      }
                  });
                 return null;

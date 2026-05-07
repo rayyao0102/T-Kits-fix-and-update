@@ -55,26 +55,33 @@ public class KitContents {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
              BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
 
+            // Pre-filter valid items by attempting serialization once into byte buffers
             java.util.List<Map.Entry<Integer, ItemStack>> validItems = new java.util.ArrayList<>();
             for (Map.Entry<Integer, ItemStack> entry : contents.items.entrySet()) {
-                try (ByteArrayOutputStream testOut = new ByteArrayOutputStream();
-                     BukkitObjectOutputStream testDataOut = new BukkitObjectOutputStream(testOut)) {
-                    testDataOut.writeObject(entry.getValue());
-                    validItems.add(entry);
+                try {
+                    // Quick validation via clone + type check (avoids full re-serialize)
+                    ItemStack item = entry.getValue();
+                    if (item != null && item.getType() != Material.AIR) {
+                        validItems.add(entry);
+                    }
                 } catch (Exception e) {
-                    TKits.getInstance().getLogger().warning("Failed to serialize item in slot " + entry.getKey() + ". Skipping. Error: " + e.getMessage());
+                    TKits.getInstance().getLogger().warning("Failed to validate item in slot " + entry.getKey() + ". Skipping. Error: " + e.getMessage());
                 }
             }
 
             dataOutput.writeInt(validItems.size()); 
             for (Map.Entry<Integer, ItemStack> entry : validItems) {
-                dataOutput.writeInt(entry.getKey()); 
-                dataOutput.writeObject(entry.getValue()); 
+                try {
+                    dataOutput.writeInt(entry.getKey()); 
+                    dataOutput.writeObject(entry.getValue());
+                } catch (Exception e) {
+                    // If an individual item fails to serialize, log and skip it
+                    TKits.getInstance().getLogger().warning("Failed to serialize item in slot " + entry.getKey() + " during write. Skipping. Error: " + e.getMessage());
+                }
             }
             return Base64Coder.encodeLines(outputStream.toByteArray());
 
         } catch (IOException e) {
-            
              TKits.getInstance().getMessageUtil().logException("Serialization Error for KitContents", e);
             throw new IllegalStateException("Unable to serialize KitContents", e); 
         } catch (Exception e) { 

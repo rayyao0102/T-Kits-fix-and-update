@@ -10,9 +10,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 
-import org.apache.commons.lang3.RandomStringUtils;
 
 
+import java.security.SecureRandom;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -116,7 +116,7 @@ public class ShareCodeManager {
 
         do {
             
-            code = RandomStringUtils.randomAlphanumeric(codeLength).toUpperCase();
+            code = generateSecureAlphanumeric(codeLength).toUpperCase();
             if (retries++ > maxRetries) {
                 plugin.getMessageUtil().debug("generateShareCodeFromKit: Failed - Max retries reached."); 
                 plugin.getMessageUtil().logSevere("Failed to generate a unique share code after " + maxRetries + " attempts for kit " + kit.getKitNumber() + " from " + ownerUUID);
@@ -178,6 +178,17 @@ public class ShareCodeManager {
     }
 
     
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    private static String generateSecureAlphanumeric(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(ALPHANUMERIC.charAt(SECURE_RANDOM.nextInt(ALPHANUMERIC.length())));
+        }
+        return sb.toString();
+    }
+
     @Getter
     @AllArgsConstructor
     private static class ShareData {

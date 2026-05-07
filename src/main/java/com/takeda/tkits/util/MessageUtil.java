@@ -132,15 +132,28 @@ public class MessageUtil {
             return;
         }
         try {
-            org.bukkit.Registry<Sound> registry = org.bukkit.Registry.SOUNDS;
-            Sound sound = registry.get(org.bukkit.NamespacedKey.minecraft(soundName.toLowerCase()));
+            Sound sound = null;
+
+            // Strategy 1: Try as Minecraft namespaced key (e.g., "entity.experience_orb.pickup")
+            try {
+                sound = org.bukkit.Registry.SOUNDS.get(
+                    org.bukkit.NamespacedKey.minecraft(soundName.toLowerCase()));
+            } catch (Exception ignored) {}
+
+            // Strategy 2: Try as legacy Bukkit Sound enum name (e.g., "ENTITY_EXPERIENCE_ORB_PICKUP")
+            if (sound == null) {
+                try {
+                    sound = Sound.valueOf(soundName.toUpperCase());
+                } catch (IllegalArgumentException ignored) {}
+            }
+
             if (sound != null) {
                 player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
             } else {
                 plugin.getLogger().warning("Invalid sound name in config.yml for key '" + soundKey + "': " + soundName);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Invalid sound name in config.yml for key '" + soundKey + "': " + soundName);
+            plugin.getLogger().warning("Error playing sound for key '" + soundKey + "': " + soundName + " - " + e.getMessage());
         }
     }
 

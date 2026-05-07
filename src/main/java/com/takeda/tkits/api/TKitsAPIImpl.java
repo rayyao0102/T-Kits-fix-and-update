@@ -29,7 +29,7 @@ public class TKitsAPIImpl implements TKitsAPI {
 
     public TKitsAPIImpl(TKits plugin) {
         this.plugin = plugin;
-        this.regearBoxKey = new NamespacedKey(plugin, "regear_box_trigger");
+        this.regearBoxKey = new NamespacedKey(plugin, "regear_box");
     }
 
     

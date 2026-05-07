@@ -130,11 +130,18 @@ public class GuiManager implements InventoryHolder {
 
     
     
+    private static final int MAX_GUI_HISTORY_DEPTH = 10;
+
     public void pushGuiHistory(UUID playerUUID, GuiIdentifier identifier, Map<String, Object> context) {
         msg.debug("[HISTORY] Pushing GUI: " + identifier + " with context " + context + " for " + playerUUID);
         Map<String, Object> safeContext = context == null ? Collections.emptyMap() : new HashMap<>(context);
-        guiHistory.computeIfAbsent(playerUUID, k -> new ArrayDeque<>()).push(new GuiState(identifier, safeContext));
-        msg.debug("[HISTORY] Stack (" + guiHistory.getOrDefault(playerUUID, new ArrayDeque<>()).size() + "): " + guiHistory.get(playerUUID));
+        Deque<GuiState> history = guiHistory.computeIfAbsent(playerUUID, k -> new ArrayDeque<>());
+        history.push(new GuiState(identifier, safeContext));
+        // Cap the history to prevent memory leaks from navigation loops
+        while (history.size() > MAX_GUI_HISTORY_DEPTH) {
+            history.removeLast();
+        }
+        msg.debug("[HISTORY] Stack (" + history.size() + "): " + history);
     }
 
     private GuiState popGuiHistory(UUID playerUUID) {
@@ -1228,8 +1235,14 @@ public class GuiManager implements InventoryHolder {
             if (closedGuiType == GuiIdentifier.KIT_EDITOR && configManager.isSaveOnEditorClose()) { 
                  int kitNumFromTitle = getKitNumberFromTitle(closedInventory);
                  if (kitNumFromTitle > 0) {
-                     msg.debug("[GUI CLOSE] Auto-saving Kit " + kitNumFromTitle + " due to manual close.");
-                     saveKitFromInventory(player, kitNumFromTitle, closedInventory);
+                     // Guard against race condition: skip auto-save if an async save is already in-flight
+                     PlayerData pData = plugin.getPlayerDataManager().getPlayerData(player);
+                     if (pData != null && pData.isSaving()) {
+                         msg.debug("[GUI CLOSE] Skipping auto-save for Kit " + kitNumFromTitle + ": an async save is already in progress.");
+                     } else {
+                         msg.debug("[GUI CLOSE] Auto-saving Kit " + kitNumFromTitle + " due to manual close.");
+                         saveKitFromInventory(player, kitNumFromTitle, closedInventory);
+                     }
                  } else {
                      msg.debug("[GUI CLOSE] Auto-save enabled, but couldn't determine kit number from closed Kit Editor.");
                  }

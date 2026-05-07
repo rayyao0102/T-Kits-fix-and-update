@@ -131,22 +131,22 @@ kitroom:
 # Sound Effects (Modern & Aesthetic)
 #-----------------------------------------
 sounds:
-  gui_click: "UI_BUTTON_CLICK"
-  confirmation_open: "BLOCK_NOTE_BLOCK_PLING"
-  confirmation_confirm: "ENTITY_EXPERIENCE_ORB_PICKUP"
-  confirmation_cancel: "BLOCK_CHEST_CLOSE"
-  cooldown: "BLOCK_NOTE_BLOCK_BASS"
-  error: "ENTITY_VILLAGER_NO"
-  kit_load: "ENTITY_EXPERIENCE_ORB_PICKUP"
-  kit_save: "ENTITY_PLAYER_LEVELUP"
-  kit_share: "ENTITY_ITEM_FRAME_ADD_ITEM"
-  repair_success: "BLOCK_ANVIL_USE"
-  repair_fail: "ENTITY_ITEM_BREAK"
-  kit_import_success: "ENTITY_PLAYER_LEVELUP"
-  kit_import_fail: "BLOCK_ANVIL_LAND"
-  regear_success: "ENTITY_CHICKEN_STEP"
-  arrange_success: "ENTITY_CHICKEN_STEP"
-  kitroom_item_take: "ENTITY_ITEM_PICKUP"
+  gui_click: "ui.button.click"
+  confirmation_open: "block.note_block.pling"
+  confirmation_confirm: "entity.experience_orb.pickup"
+  confirmation_cancel: "block.chest.close"
+  cooldown: "block.note_block.bass"
+  error: "entity.villager.no"
+  kit_load: "entity.experience_orb.pickup"
+  kit_save: "entity.player.levelup"
+  kit_share: "entity.item_frame.add_item"
+  repair_success: "block.anvil.use"
+  repair_fail: "entity.item.break"
+  kit_import_success: "entity.player.levelup"
+  kit_import_fail: "block.anvil.land"
+  regear_success: "entity.chicken.step"
+  arrange_success: "entity.chicken.step"
+  kitroom_item_take: "entity.item.pickup"
 
 #-----------------------------------------
 # Messages (Modern, High-Contrast, Aesthetic)

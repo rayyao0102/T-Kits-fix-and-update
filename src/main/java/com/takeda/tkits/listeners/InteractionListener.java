@@ -45,6 +45,9 @@ public class InteractionListener implements Listener {
     private final NamespacedKey regearShellKey;
     private final Map<Location, UUID> placedRegearBoxes =
         new ConcurrentHashMap<>();
+    /** Reverse index for O(1) player-to-box lookups (avoids linear stream scan). */
+    private final Map<UUID, Location> playerToBoxLocation =
+        new ConcurrentHashMap<>();
 
     public InteractionListener(TKits plugin) {
         this.plugin = plugin;
@@ -96,6 +99,7 @@ public class InteractionListener implements Listener {
             
 
             placedRegearBoxes.put(loc, player.getUniqueId());
+            playerToBoxLocation.put(player.getUniqueId(), loc);
             blockPlaced.setMetadata(
                 "tkits_regear_owner",
                 new FixedMetadataValue(plugin, player.getUniqueId().toString())
@@ -222,6 +226,50 @@ public class InteractionListener implements Listener {
         player.openInventory(gui);
     }
 
+    /**
+     * Handles clicks inside the regear shell GUI. When a player clicks a regear 
+     * shell item, executes the regear process and cleans up the placed box.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onRegearGuiClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (!(event.getInventory().getHolder() instanceof RegearInventoryHolder holder)) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        event.setCancelled(true); // Always cancel — no item manipulation in this GUI
+
+        ItemStack clicked = event.getCurrentItem();
+        if (clicked == null || clicked.getType() == Material.AIR) return;
+
+        ItemMeta clickedMeta = clicked.getItemMeta();
+        if (clickedMeta == null) return;
+        if (!clickedMeta.getPersistentDataContainer().has(regearShellKey, PersistentDataType.BYTE)) return;
+
+        // Execute regear with cooldown checks
+        if (!player.hasPermission("tkits.cooldown.bypass")) {
+            long remaining = cooldownService.getRemainingCooldown(player.getUniqueId(), CooldownService.CooldownType.REGEAR);
+            if (remaining > 0) {
+                msg.sendMessage(player, "on_cooldown", "time", String.format("%.1f", remaining / 1000.0));
+                msg.playSound(player, "cooldown");
+                return;
+            }
+        }
+
+        Kit kitToRegear = holder.getLastKit();
+        boolean success = utilityService.executeRegear(player, kitToRegear);
+
+        if (success) {
+            if (!player.hasPermission("tkits.cooldown.bypass")) {
+                cooldownService.applyCooldown(player.getUniqueId(), CooldownService.CooldownType.REGEAR);
+            }
+            msg.sendActionBar(player, "regear_success");
+            msg.playSound(player, "regear_success");
+        } else {
+            msg.playSound(player, "error");
+        }
+
+        player.closeInventory(); // This will trigger onRegearGuiClose for box cleanup
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onRegearGuiClose(InventoryCloseEvent event) {
         if (
@@ -282,10 +330,12 @@ public class InteractionListener implements Listener {
     private void removeBox(Location loc) {
         if (loc == null) return;
         UUID ownerUUID = placedRegearBoxes.remove(loc); 
+        if (ownerUUID != null) {
+            playerToBoxLocation.remove(ownerUUID);
+        }
         Block block = loc.getBlock();
 
         if (block.getType().name().contains("SHULKER_BOX")) { 
-            
             block.removeMetadata("tkits_regear_owner", plugin);
             block.removeMetadata("tkits_no_drop", plugin);
             block.setType(Material.AIR, true); 
@@ -298,18 +348,11 @@ public class InteractionListener implements Listener {
                 " at " +
                 loc.toVector()
             );
-        
     }
 
+    /** O(1) reverse-index lookup instead of O(n) stream scan. */
     private Location findPlacedRegearBox(UUID playerUUID) {
-        
-        return placedRegearBoxes
-            .entrySet()
-            .stream()
-            .filter(entry -> playerUUID.equals(entry.getValue()))
-            .map(Map.Entry::getKey)
-            .findFirst()
-            .orElse(null);
+        return playerToBoxLocation.get(playerUUID);
     }
 
     

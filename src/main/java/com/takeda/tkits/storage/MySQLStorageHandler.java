@@ -286,25 +286,38 @@ public class MySQLStorageHandler implements StorageHandler {
                     "contents = VALUES(contents), " +
                     "enderchest_contents = VALUES(enderchest_contents), " +
                     "is_global = VALUES(is_global)";
-            try (Connection conn = getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
+            Connection conn = null;
+            try {
+                 conn = getConnection();
                  conn.setAutoCommit(false);
-                 for (Kit kit : kits) {
-                      if (kit.getKitNumber() <= 0) continue;
-                      ps.setString(1, kit.getOwner().toString());
-                      ps.setInt(2, kit.getKitNumber());
-                      ps.setString(3, KitContents.serialize(kit.getContents()));
-                      ps.setString(4, KitContents.serialize(kit.getEnderChestContents()));
-                      ps.setBoolean(5, kit.isGlobal());
-                      ps.addBatch();
+                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                     for (Kit kit : kits) {
+                          if (kit.getKitNumber() <= 0) continue;
+                          ps.setString(1, kit.getOwner().toString());
+                          ps.setInt(2, kit.getKitNumber());
+                          ps.setString(3, KitContents.serialize(kit.getContents()));
+                          ps.setString(4, KitContents.serialize(kit.getEnderChestContents()));
+                          ps.setBoolean(5, kit.isGlobal());
+                          ps.addBatch();
+                     }
+                     ps.executeBatch();
                  }
-                 ps.executeBatch();
                  conn.commit();
-                 conn.setAutoCommit(true);
                  return null;
             } catch (Exception e) {
-                 plugin.getMessageUtil().logException("Batch save error", e);
+                 // Rollback on any failure to prevent partial writes
+                 if (conn != null) {
+                     try { conn.rollback(); } catch (SQLException rollbackEx) {
+                         plugin.getMessageUtil().logException("Failed to rollback batch save transaction", rollbackEx);
+                     }
+                 }
+                 plugin.getMessageUtil().logException("Batch save error (transaction rolled back)", e);
                  throw new RuntimeException(e);
+            } finally {
+                 if (conn != null) {
+                     try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
+                     try { conn.close(); } catch (SQLException ignored) {}
+                 }
             }
         }, executor);
     }

@@ -36,7 +36,7 @@ public class CombatTagManager implements Listener {
     private volatile Set<String> cachedBlockedCommands = Collections.emptySet();
 
     private final Cache<UUID, Long> combatTaggedPlayers;
-    @Getter private final boolean internalCombatTagEnabled; 
+    @Getter private boolean internalCombatTagEnabled; 
 
     public CombatTagManager(TKits plugin) {
         this.plugin = plugin;
@@ -88,6 +88,9 @@ public class CombatTagManager implements Listener {
          this.cachedBlockedCommands = Collections.unmodifiableSet(tempSet);
 
          plugin.getMessageUtil().logInfo("Combat tag settings reloaded: Enabled=" + combatTagEnabled + ", PreventEnderpearl=" + combatTagPreventEnderpearl + ", Duration=" + durationSeconds + "s, BlockedCmds=" + cachedBlockedCommands.size());
+
+         // Update internalCombatTagEnabled to reflect current config
+         this.internalCombatTagEnabled = this.combatTagEnabled;
      }
 
 

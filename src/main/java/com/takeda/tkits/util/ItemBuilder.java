@@ -134,12 +134,19 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * Sets the skull owner for PLAYER_HEAD items.
+     * Uses PlayerProfile to avoid blocking Mojang API calls on the main thread.
+     * The texture will be resolved lazily when the item is rendered.
+     */
     public ItemBuilder skullOwner(String ownerName) {
-         if (this.itemMeta instanceof org.bukkit.inventory.meta.SkullMeta) {
-             try {
-                  org.bukkit.OfflinePlayer offlinePlayer = org.bukkit.Bukkit.getOfflinePlayer(ownerName);
-                  ((org.bukkit.inventory.meta.SkullMeta) this.itemMeta).setOwningPlayer(offlinePlayer);
-             } catch (Exception ignored) { /* Handle potential errors */ }
+         if (this.itemMeta instanceof org.bukkit.inventory.meta.SkullMeta skullMeta) {
+              try {
+                   // Use PlayerProfile to avoid synchronous Mojang API lookups
+                   com.destroystokyo.paper.profile.PlayerProfile profile = 
+                       org.bukkit.Bukkit.createProfile(ownerName);
+                   skullMeta.setPlayerProfile(profile);
+              } catch (Exception ignored) { /* Handle potential errors */ }
          }
          return this;
      }

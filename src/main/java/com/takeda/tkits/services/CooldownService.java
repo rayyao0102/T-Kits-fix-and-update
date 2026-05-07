@@ -68,7 +68,9 @@ public class CooldownService {
              
               Cache<CooldownType, Long> playerCooldowns = cooldownCache.get(playerUUID, () ->
                   CacheBuilder.newBuilder()
-                       .expireAfterWrite(duration + TimeUnit.SECONDS.toMillis(10), TimeUnit.MILLISECONDS) 
+                       // Use a generous TTL for the inner cache — individual entries are
+                       // manually invalidated on check, so this is just a cleanup backstop.
+                       .expireAfterWrite(5, TimeUnit.MINUTES)
                       .build()
               );
              playerCooldowns.put(type, expiryTime);

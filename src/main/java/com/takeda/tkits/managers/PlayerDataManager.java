@@ -16,55 +16,53 @@ public class PlayerDataManager {
 
     private final TKits plugin;
     private final Map<UUID, PlayerData> playerDataMap; 
-    private final Set<UUID> loadingPlayers; 
+    /** Tracks in-flight load futures to coalesce concurrent load requests for the same player. */
+    private final Map<UUID, CompletableFuture<PlayerData>> loadingFutures;
 
     public PlayerDataManager(TKits plugin) {
         this.plugin = plugin;
         this.playerDataMap = new ConcurrentHashMap<>();
-        this.loadingPlayers = ConcurrentHashMap.newKeySet(); 
+        this.loadingFutures = new ConcurrentHashMap<>();
     }
 
     /**
      * Asynchronously loads player data from storage into the cache.
-     * If data is already loading or loaded, returns the existing future or data.
+     * If data is already loaded, returns the cached data.
+     * If a load is already in-flight, returns the existing future (coalescing).
      * @param playerUUID The UUID of the player to load.
      * @return A CompletableFuture containing the PlayerData, completed when loaded.
      */
     public CompletableFuture<PlayerData> loadPlayerData(UUID playerUUID) {
-        if (playerDataMap.containsKey(playerUUID)) {
-            return CompletableFuture.completedFuture(playerDataMap.get(playerUUID));
+        // Fast path: already cached
+        PlayerData cached = playerDataMap.get(playerUUID);
+        if (cached != null) {
+            return CompletableFuture.completedFuture(cached);
         }
         
-        if (!loadingPlayers.add(playerUUID)) {
-            
-             
-             
-            plugin.getLogger().fine("Attempted to load data for player " + playerUUID + " while already loading.");
-            
-             return CompletableFuture.completedFuture(new PlayerData(playerUUID)); 
-        }
+        // Coalesce concurrent requests: return the existing in-flight future if one exists
+        return loadingFutures.computeIfAbsent(playerUUID, uuid -> {
+            plugin.getLogger().fine("Loading data for player " + uuid + "...");
+            PlayerData data = new PlayerData(uuid);
 
-        plugin.getLogger().fine("Loading data for player " + playerUUID + "...");
-        PlayerData data = new PlayerData(playerUUID); 
-
-        return plugin.getStorageHandler().loadPlayerKits(playerUUID)
-             .thenApplyAsync(loadedKits -> {
-                 loadedKits.forEach(data::setKit); 
-                 playerDataMap.put(playerUUID, data); 
-                 loadingPlayers.remove(playerUUID); 
-                 plugin.getLogger().info("Successfully loaded data for player " + playerUUID + ". Found " + loadedKits.size() + " kits.");
-                 return data;
-             }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin)) 
-              .exceptionally(ex -> {
-                 plugin.getMessageUtil().logException("Failed to load player data for " + playerUUID, ex);
-                  loadingPlayers.remove(playerUUID); 
-                 
-                 
-                 
-                 playerDataMap.put(playerUUID, data); 
-                  plugin.getMessageUtil().logWarning("Returning empty PlayerData object for " + playerUUID + " due to loading error.");
-                 return data; 
-             });
+            return plugin.getStorageHandler().loadPlayerKits(uuid)
+                 .thenApplyAsync(loadedKits -> {
+                     loadedKits.forEach(data::setKit);
+                     playerDataMap.put(uuid, data);
+                     plugin.getLogger().info("Successfully loaded data for player " + uuid + ". Found " + loadedKits.size() + " kits.");
+                     return data;
+                 }, plugin.getServer().getScheduler().getMainThreadExecutor(plugin))
+                  .exceptionally(ex -> {
+                     plugin.getMessageUtil().logException("Failed to load player data for " + uuid, ex);
+                     // Still cache an empty PlayerData so the player can function
+                     playerDataMap.put(uuid, data);
+                     plugin.getMessageUtil().logWarning("Returning empty PlayerData object for " + uuid + " due to loading error.");
+                     return data;
+                 })
+                 .whenComplete((result, throwable) -> {
+                     // Always clean up the in-flight future reference
+                     loadingFutures.remove(uuid);
+                 });
+        });
     }
 
     /**
@@ -75,7 +73,7 @@ public class PlayerDataManager {
      */
     public void unloadPlayerData(UUID playerUUID, boolean saveBeforeUnload) {
         PlayerData data = playerDataMap.remove(playerUUID);
-         loadingPlayers.remove(playerUUID); 
+         loadingFutures.remove(playerUUID); 
         if (data != null) {
             plugin.getLogger().fine("Unloaded data cache for player " + playerUUID);
             if (saveBeforeUnload && !data.isSaving()) { 

@@ -204,8 +204,9 @@ public class UtilityService {
 
     /**
      * Checks if two ItemStacks are sufficiently similar for regear/arrange logic.
-     * Currently uses Bukkit's `isSimilar`, which checks type, amount, durability,
-     * and meta (name, lore, enchants, etc.). Can be customized for stricter/looser matching.
+     * Compares type, enchantments, display name, lore, custom model data, and 
+     * unbreakable status. Intentionally ignores durability/damage so that worn 
+     * equipment still matches its kit template.
      * @param item1 First item
      * @param item2 Second item
      * @return True if considered similar enough, false otherwise.
@@ -219,8 +220,27 @@ public class UtilityService {
          
          if (meta1 == null && meta2 == null) return true;
          if (meta1 == null || meta2 == null) return false;
-         
-         return meta1.equals(meta2);
+
+         // Compare enchantments
+         if (!meta1.getEnchants().equals(meta2.getEnchants())) return false;
+
+         // Compare display names
+         if (meta1.hasDisplayName() != meta2.hasDisplayName()) return false;
+         if (meta1.hasDisplayName() && !Objects.equals(meta1.displayName(), meta2.displayName())) return false;
+
+         // Compare lore
+         if (meta1.hasLore() != meta2.hasLore()) return false;
+         if (meta1.hasLore() && !Objects.equals(meta1.lore(), meta2.lore())) return false;
+
+         // Compare custom model data
+         if (meta1.hasCustomModelData() != meta2.hasCustomModelData()) return false;
+         if (meta1.hasCustomModelData() && meta1.getCustomModelData() != meta2.getCustomModelData()) return false;
+
+         // Compare unbreakable
+         if (meta1.isUnbreakable() != meta2.isUnbreakable()) return false;
+
+         // Intentionally NOT comparing Damageable.getDamage() — worn items should still match
+         return true;
      }
 
       

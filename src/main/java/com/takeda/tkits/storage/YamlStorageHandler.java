@@ -23,6 +23,8 @@ public class YamlStorageHandler implements StorageHandler {
     private FileConfiguration globalKitsConfig;
     private final ExecutorService executor;
     private final Object globalLock = new Object(); 
+    /** Per-player locks to prevent concurrent read-modify-write races on the same player file. */
+    private final java.util.concurrent.ConcurrentHashMap<UUID, Object> playerFileLocks = new java.util.concurrent.ConcurrentHashMap<>();
 
     public YamlStorageHandler(TKits plugin) {
         this.plugin = plugin;
@@ -120,62 +122,84 @@ public class YamlStorageHandler implements StorageHandler {
     @Override
     public CompletableFuture<Void> savePlayerKit(UUID playerUUID, Kit kit) {
          
-        return loadPlayerConfigAsync(playerUUID).thenComposeAsync(config -> {
-             
-             if (!kit.getOwner().equals(playerUUID)) {
-                 plugin.getMessageUtil().logSevere("CRITICAL SAVE ERROR: Attempted to save kit for player " + playerUUID
-                     + " but kit owner is " + kit.getOwner() + ". Aborting save for Kit " + kit.getKitNumber());
-                  return CompletableFuture.completedFuture(null); 
-             }
+        return CompletableFuture.runAsync(() -> {
+            Object lock = playerFileLocks.computeIfAbsent(playerUUID, k -> new Object());
+            synchronized (lock) {
+                if (!kit.getOwner().equals(playerUUID)) {
+                    plugin.getMessageUtil().logSevere("CRITICAL SAVE ERROR: Attempted to save kit for player " + playerUUID
+                        + " but kit owner is " + kit.getOwner() + ". Aborting save for Kit " + kit.getKitNumber());
+                    return;
+                }
 
-             ConfigurationSection kitSection = config.createSection("kits." + kit.getKitNumber());
-             serializeKit(kitSection, kit); 
+                File playerFile = getPlayerFile(playerUUID);
+                FileConfiguration config;
+                if (playerFile.exists()) {
+                    try {
+                        config = YamlConfiguration.loadConfiguration(playerFile);
+                    } catch (Exception e) {
+                        plugin.getMessageUtil().logException("Failed to load config for player " + playerUUID + " during save", e);
+                        config = new YamlConfiguration();
+                    }
+                } else {
+                    config = new YamlConfiguration();
+                }
 
-             
-             return CompletableFuture.runAsync(() -> {
-                 File playerFile = getPlayerFile(playerUUID);
-                 try {
-                     config.save(playerFile);
-                 } catch (IOException e) {
-                     plugin.getMessageUtil().logException("Could not save player data for " + playerUUID, e);
-                      throw new RuntimeException(e); 
-                 }
-             }, executor);
-         }, executor); 
+                ConfigurationSection kitSection = config.createSection("kits." + kit.getKitNumber());
+                serializeKit(kitSection, kit);
+
+                try {
+                    config.save(playerFile);
+                } catch (IOException e) {
+                    plugin.getMessageUtil().logException("Could not save player data for " + playerUUID, e);
+                    throw new RuntimeException(e);
+                }
+            }
+        }, executor);
     }
 
 
     @Override
     public CompletableFuture<Void> deletePlayerKit(UUID playerUUID, int kitNumber) {
-        return loadPlayerConfigAsync(playerUUID).thenComposeAsync(config -> {
-            if (!config.isConfigurationSection("kits." + kitNumber)) {
-                 return CompletableFuture.completedFuture(null); 
+        return CompletableFuture.runAsync(() -> {
+            Object lock = playerFileLocks.computeIfAbsent(playerUUID, k -> new Object());
+            synchronized (lock) {
+                File playerFile = getPlayerFile(playerUUID);
+                if (!playerFile.exists()) {
+                    return; // Nothing to delete
+                }
+
+                FileConfiguration config;
+                try {
+                    config = YamlConfiguration.loadConfiguration(playerFile);
+                } catch (Exception e) {
+                    plugin.getMessageUtil().logException("Failed to load config for player " + playerUUID + " during delete", e);
+                    return;
+                }
+
+                if (!config.isConfigurationSection("kits." + kitNumber)) {
+                    return; // Kit doesn't exist
+                }
+
+                config.set("kits." + kitNumber, null);
+
+                ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+                if (kitsSection != null && kitsSection.getKeys(false).isEmpty()) {
+                    config.set("kits", null);
+                }
+
+                try {
+                    if (config.getKeys(false).isEmpty()) {
+                        if (playerFile.exists() && !playerFile.delete()) {
+                            plugin.getMessageUtil().logWarning("Could not delete empty player file: " + playerFile.getName());
+                        }
+                    } else {
+                        config.save(playerFile);
+                    }
+                } catch (IOException e) {
+                    plugin.getMessageUtil().logException("Could not save player data after deleting kit for " + playerUUID, e);
+                    throw new RuntimeException(e);
+                }
             }
-
-             config.set("kits." + kitNumber, null);
-
-             ConfigurationSection kitsSection = config.getConfigurationSection("kits");
-            if (kitsSection != null && kitsSection.getKeys(false).isEmpty()) {
-                 config.set("kits", null); 
-             }
-
-            
-            return CompletableFuture.runAsync(() -> {
-                 File playerFile = getPlayerFile(playerUUID);
-                 try {
-                     
-                     if (config.getKeys(false).isEmpty()) {
-                         if (playerFile.exists() && !playerFile.delete()) {
-                             plugin.getMessageUtil().logWarning("Could not delete empty player file: " + playerFile.getName());
-                         }
-                     } else {
-                         config.save(playerFile); 
-                     }
-                 } catch (IOException e) {
-                     plugin.getMessageUtil().logException("Could not save player data after deleting kit for " + playerUUID, e);
-                      throw new RuntimeException(e);
-                 }
-             }, executor);
         }, executor);
     }
 
